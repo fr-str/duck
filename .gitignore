@@ -1,2 +1,3 @@
-docker-project
 .vscode
+docker-run.sh
+dockerfile

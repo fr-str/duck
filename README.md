@@ -1,5 +1,8 @@
 ### Docker Project
 
+## Goal
+Be better faster stronger
+
 ### Done
 - ws api
 - live container statuses
