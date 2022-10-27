@@ -1,8 +1,8 @@
-### actions
+# actions
 
-# RequestID - response will have same ID as Request
-# Action - what action to perform
-# Data - data needed to perform action
+### RequestID - response will have same ID as Request
+### Action - what action to perform
+### Data - data needed to perform action
 
 ## Live feed of containers
 ```json 

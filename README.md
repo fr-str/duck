@@ -3,6 +3,9 @@
 ## Goal
 Be better faster stronger
 
+## Example WS messages
+[api docs](https://github.com/fr-str/docker-project/blob/master/api/actions/docs.md)
+
 ### Done
 - ws api
 - live container statuses
