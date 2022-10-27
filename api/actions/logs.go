@@ -23,7 +23,7 @@ func (a *Logs) Handle(r *ws.Request) ws.Response {
 	}
 	act := strings.TrimPrefix(r.Action, "logs.")
 	switch act {
-	case "before":
+	case "get":
 		return a.Before(r)
 	default:
 		return ws.Error(r, er.Action+er.NotFound)
