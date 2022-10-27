@@ -121,6 +121,7 @@ func socketHandler(conn *websocket.Conn) {
 		r, code := decodeRequest(message)
 		if code != er.OK {
 			conn.WriteJSON(Error(r, code))
+			continue
 		}
 		// handle
 		go func(r *Request) {
@@ -144,6 +145,7 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 	// Get action handler
 	handler, exists := handlers[prefix]
 	if !exists {
+		log.Debug(er.Action.String() + er.Missing.String())
 		w <- Error(r, er.Action+er.Missing)
 		return
 	}
@@ -151,6 +153,7 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 	// Decode action data
 	action, err := handler.decode(r.Data)
 	if err != nil {
+		log.Error(er.InternalServerError.String())
 		w <- Error(r, er.InternalServerError)
 		return
 	}
@@ -185,6 +188,7 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 	case res := <-result:
 		w <- res
 	case <-ctx.Done():
+		log.Debug("request timeout")
 		w <- Error(r, er.Timeout)
 	}
 }
@@ -195,12 +199,15 @@ func decodeRequest(dataIn []byte) (r *Request, code er.Type) {
 	}
 	err := json.Unmarshal(dataIn, r)
 	if err != nil {
-		return r, er.InternalServerError
+		log.Error(err)
+		return r, er.Error + er.Decode
 	}
 	if r.RequestID == "" {
+		log.Debug(er.Missing.String() + er.ReqID.String())
 		return r, er.Missing + er.ReqID
 	}
 	if r.Action == "" {
+		log.Debug(er.Missing.String() + er.Action.String())
 		return r, er.Missing + er.Action
 	}
 	return r, er.OK
@@ -230,10 +237,6 @@ func panicHandler(r *Request, w chan<- Response) {
 
 func Error(r *Request, code er.Type) Response {
 	data := (code ^ (code % 100)).String() + (code % 100).String()
-	log.Error(r.Action, data)
-	if code == er.InternalServerError {
-		data = (code ^ (code % 100)).String() + ` ¯\_(ツ)_/¯`
-	}
 	return Response{
 		RequestID: r.RequestID,
 		Code:      code,

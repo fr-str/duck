@@ -6,19 +6,21 @@ type Type uint16
 // ErrMissAction = errors.New("invalid request - missing `Action`")
 
 const (
-	OK                  Type = 200
-	NotFound            Type = 100
-	Missing             Type = 300
-	Forbbiden           Type = 400
-	Timeout             Type = 500
-	InternalServerError Type = 1000
+	InternalServerError Type = 100
+
+	OK        Type = 200
+	Error     Type = 300
+	Forbbiden Type = 400
+	Missing   Type = 500
+	Timeout   Type = 600
+	NotFound  Type = 700
 )
 
 const (
-	_ Type = iota
-	ReqID
+	ReqID Type = iota
 	Action
 	ContainerName
 	Container
 	UntilInLive
+	Decode
 )

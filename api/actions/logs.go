@@ -19,6 +19,7 @@ type Logs struct {
 
 func (a *Logs) Handle(r *ws.Request) ws.Response {
 	if a.ContainerName == "" {
+		log.Debug(er.Missing.String() + er.ContainerName.String())
 		return ws.Error(r, er.Missing+er.ContainerName)
 	}
 	act := strings.TrimPrefix(r.Action, "logs.")
@@ -26,6 +27,7 @@ func (a *Logs) Handle(r *ws.Request) ws.Response {
 	case "get":
 		return a.Before(r)
 	default:
+		log.Debug(er.Action.String() + er.NotFound.String())
 		return ws.Error(r, er.Action+er.NotFound)
 	}
 }
@@ -33,6 +35,7 @@ func (a *Logs) Handle(r *ws.Request) ws.Response {
 // What a mess lol
 func (a *Logs) HandleSub(r *ws.Request, w chan<- ws.Response) {
 	if a.Until != 0 {
+		log.Debug(er.Forbbiden.String() + er.UntilInLive.String())
 		w <- ws.Error(r, er.Forbbiden+er.UntilInLive)
 		return
 	}
@@ -40,9 +43,12 @@ func (a *Logs) HandleSub(r *ws.Request, w chan<- ws.Response) {
 	logs, _, err := docker.GetLogs(a.ContainerName, a.Amount, a.Since, 0, false)
 	if err != nil {
 		if err == docker.ErrContNotExist {
+			log.Debug(er.Container.String() + er.NotFound.String())
 			w <- ws.Error(r, er.Container+er.NotFound)
 			return
 		}
+
+		log.Error(er.InternalServerError.String())
 		w <- ws.Error(r, er.InternalServerError)
 		return
 	}
@@ -98,8 +104,10 @@ func (a *Logs) Before(r *ws.Request) ws.Response {
 	logs, _, err := docker.GetLogs(a.ContainerName, a.Amount, a.Since, a.Until, false)
 	if err != nil {
 		if err == docker.ErrContNotExist {
+			log.Debug(er.Container.String() + er.NotFound.String())
 			return ws.Error(r, er.Container+er.NotFound)
 		}
+		log.Error(er.InternalServerError.String())
 		return ws.Error(r, er.InternalServerError)
 
 	}

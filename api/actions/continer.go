@@ -2,6 +2,7 @@ package actions
 
 import (
 	ws "docker-project/api/server"
+	log "docker-project/logger"
 
 	"docker-project/docker"
 	"docker-project/er"
@@ -30,6 +31,7 @@ func (a *Containers) Handle(r *ws.Request) ws.Response {
 		return a.List(r)
 
 	default:
+		log.Error(er.Action.String() + er.NotFound.String())
 		return ws.Error(r, er.Action+er.NotFound)
 	}
 }
