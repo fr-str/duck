@@ -30,6 +30,7 @@ func (a *Logs) Handle(r *ws.Request) ws.Response {
 	}
 }
 
+// What a mess lol
 func (a *Logs) HandleSub(r *ws.Request, w chan<- ws.Response) {
 	if a.Until != 0 {
 		w <- ws.Error(r, er.Forbbiden+er.UntilInLive)

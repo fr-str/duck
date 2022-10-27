@@ -1,5 +1,9 @@
 ### Docker Project
 
+### Done
+- ws api
+- live container statuses
+- live logs
 
 ### TODO
 - better name
