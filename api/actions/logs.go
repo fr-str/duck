@@ -2,7 +2,7 @@ package actions
 
 import (
 	"bufio"
-	"docker-project/api"
+	ws "docker-project/api/server"
 	"docker-project/docker"
 	"docker-project/er"
 	log "docker-project/logger"
@@ -17,35 +17,35 @@ type Logs struct {
 	Until         int64
 }
 
-func (a *Logs) Handle(r *api.Request) api.Response {
+func (a *Logs) Handle(r *ws.Request) ws.Response {
 	if a.ContainerName == "" {
-		return api.Error(r, er.Missing+er.ContainerName)
+		return ws.Error(r, er.Missing+er.ContainerName)
 	}
 	act := strings.TrimPrefix(r.Action, "logs.")
 	switch act {
 	case "before":
 		return a.Before(r)
 	default:
-		return api.Error(r, er.Action+er.NotFound)
+		return ws.Error(r, er.Action+er.NotFound)
 	}
 }
 
-func (a *Logs) HandleSub(r *api.Request, w chan<- api.Response) {
+func (a *Logs) HandleSub(r *ws.Request, w chan<- ws.Response) {
 	if a.Until != 0 {
-		w <- api.Error(r, er.Forbbiden+er.UntilInLive)
+		w <- ws.Error(r, er.Forbbiden+er.UntilInLive)
 		return
 	}
 
 	logs, _, err := docker.GetLogs(a.ContainerName, a.Amount, a.Since, 0, false)
 	if err != nil {
 		if err == docker.ErrContNotExist {
-			w <- api.Error(r, er.Container+er.NotFound)
+			w <- ws.Error(r, er.Container+er.NotFound)
 			return
 		}
-		w <- api.Error(r, er.InternalServerError)
+		w <- ws.Error(r, er.InternalServerError)
 		return
 	}
-	w <- api.Ok(r, logs)
+	w <- ws.Ok(r, logs)
 
 	var strip bool
 	if !docker.ContainerMap.Get(a.ContainerName).Tty {
@@ -86,21 +86,21 @@ func (a *Logs) HandleSub(r *api.Request, w chan<- api.Response) {
 			log.Error(err)
 		}
 
-		w <- api.Ok(r, []docker.Log{{
+		w <- ws.Ok(r, []docker.Log{{
 			Timestamp: ti.UnixNano(),
 			Message:   msg,
 		}})
 	}
 }
 
-func (a *Logs) Before(r *api.Request) api.Response {
+func (a *Logs) Before(r *ws.Request) ws.Response {
 	logs, _, err := docker.GetLogs(a.ContainerName, a.Amount, a.Since, a.Until, false)
 	if err != nil {
 		if err == docker.ErrContNotExist {
-			return api.Error(r, er.Container+er.NotFound)
+			return ws.Error(r, er.Container+er.NotFound)
 		}
-		return api.Error(r, er.InternalServerError)
+		return ws.Error(r, er.InternalServerError)
 
 	}
-	return api.Ok(r, logs)
+	return ws.Ok(r, logs)
 }

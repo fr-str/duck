@@ -1,7 +1,8 @@
 package actions
 
 import (
-	"docker-project/api"
+	ws "docker-project/api/server"
+
 	"docker-project/docker"
 	"docker-project/er"
 	"docker-project/structs"
@@ -16,7 +17,7 @@ type Containers struct {
 	Value string
 }
 
-func (a *Containers) Handle(r *api.Request) api.Response {
+func (a *Containers) Handle(r *ws.Request) ws.Response {
 	act := strings.TrimPrefix(r.Action, "container.")
 	switch act {
 	case "stop":
@@ -29,13 +30,13 @@ func (a *Containers) Handle(r *api.Request) api.Response {
 		return a.List(r)
 
 	default:
-		return api.Error(r, er.Action+er.NotFound)
+		return ws.Error(r, er.Action+er.NotFound)
 	}
 }
 
-func (a *Containers) HandleSub(r *api.Request, w chan<- api.Response) {
+func (a *Containers) HandleSub(r *ws.Request, w chan<- ws.Response) {
 	for el := range docker.ContainerMap.Iter() {
-		w <- api.Ok(r, types.WatchMsg[string, structs.Container]{
+		w <- ws.Ok(r, types.WatchMsg[string, structs.Container]{
 			Event: types.PutEvent,
 			Item:  el,
 		})
@@ -45,18 +46,18 @@ func (a *Containers) HandleSub(r *api.Request, w chan<- api.Response) {
 		select {
 		case <-r.Ctx.Done():
 			return
-		case w <- api.Ok(r, v):
+		case w <- ws.Ok(r, v):
 		}
 	}
 }
 
-func (a *Containers) Stop(r *api.Request) api.Response    { return api.Ok(r, nil) }
-func (a *Containers) Start(r *api.Request) api.Response   { return api.Ok(r, nil) }
-func (a *Containers) Restart(r *api.Request) api.Response { return api.Ok(r, nil) }
-func (a *Containers) List(r *api.Request) api.Response {
+func (a *Containers) Stop(r *ws.Request) ws.Response    { return ws.Ok(r, nil) }
+func (a *Containers) Start(r *ws.Request) ws.Response   { return ws.Ok(r, nil) }
+func (a *Containers) Restart(r *ws.Request) ws.Response { return ws.Ok(r, nil) }
+func (a *Containers) List(r *ws.Request) ws.Response {
 	m := map[string]structs.Container{}
 	for v := range docker.ContainerMap.Iter() {
 		m[v.Key] = v.Value
 	}
-	return api.Ok(r, m)
+	return ws.Ok(r, m)
 }
