@@ -3,6 +3,7 @@ package structs
 import (
 	"context"
 	dcli "docker-project/docker/client"
+	log "docker-project/logger"
 
 	"github.com/docker/docker/api/types"
 	"github.com/timoni-io/go-utils/slice"
@@ -37,17 +38,26 @@ type Event struct {
 }
 
 func (cont Container) Start() error {
+	log.Debug("Starting container", cont.Name)
 	return dcli.Cli.ContainerStart(context.TODO(), cont.ID, types.ContainerStartOptions{})
 }
 
 func (cont Container) Stop() error {
+	log.Debug("Stopping container", cont.Name)
 	return dcli.Cli.ContainerStop(context.TODO(), cont.ID, nil)
 }
 
 func (cont Container) Restart() error {
+	log.Debug("Restarting container", cont.Name)
 	return dcli.Cli.ContainerRestart(context.TODO(), cont.ID, nil)
 }
 
 func (cont Container) Kill() error {
+	log.Debug("Killing container", cont.Name)
 	return dcli.Cli.ContainerKill(context.TODO(), cont.ID, "SIGKILL")
+}
+
+func (cont Container) Delete() error {
+	log.Debug("Deleting container", cont.Name)
+	return dcli.Cli.ContainerRemove(context.TODO(), cont.ID, types.ContainerRemoveOptions{})
 }

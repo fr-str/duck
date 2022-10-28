@@ -16,7 +16,6 @@ Be better faster stronger
  - [ ] delete containers
  - [ ] create containers
  - [ ] attach to containers
- - [ ] 
  - [ ] better way to navigate thru logs
  - [ ] make it a .service
  - [ ] ~~multi node (local network)~~ not going to implement, just use kubernetes i guess

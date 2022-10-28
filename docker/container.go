@@ -33,6 +33,9 @@ func SetContainer(dcont types.Container) {
 
 	t, err := dcli.Cli.ContainerInspect(context.TODO(), cont.ID)
 	if err != nil {
+		if strings.Contains(err.Error(), "No such container") {
+			return
+		}
 		log.Error(err)
 	}
 

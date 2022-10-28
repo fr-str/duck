@@ -13,7 +13,9 @@ import (
 )
 
 type Containers struct {
-	Name string
+	Name      string
+	SoftForce bool
+	Force     bool
 }
 
 func (a *Containers) Handle(r *ws.Request) ws.Response {
@@ -23,6 +25,10 @@ func (a *Containers) Handle(r *ws.Request) ws.Response {
 		return a.SSRK(r)
 	case "list":
 		return a.List(r)
+	case "create":
+		return a.Create(r)
+	case "delete":
+		return a.Delete(r)
 
 	default:
 		log.Error(er.Action.String() + er.NotFound.String())
@@ -62,6 +68,35 @@ func (a *Containers) SSRK(r *ws.Request) ws.Response {
 		ws.GoError(r, er.InternalServerError, cont.Restart)
 	case "kill":
 		ws.GoError(r, er.InternalServerError, cont.Kill)
+	}
+
+	return ws.Ok(r, "ok")
+}
+
+func (a *Containers) Create(r *ws.Request) ws.Response {
+	_, ok := docker.ContainerMap.GetFull(a.Name)
+	if ok {
+		return ws.Error(r, er.Exists+er.Container)
+	}
+	//TODO
+
+	return ws.Ok(r, "ok")
+}
+
+func (a *Containers) Delete(r *ws.Request) ws.Response {
+	cont, ok := docker.ContainerMap.GetFull(a.Name)
+	if !ok {
+		return ws.Error(r, er.NotFound+er.Container)
+	}
+
+	if !a.Force && !a.SoftForce && cont.State != "exited" {
+		return ws.Error(r, er.Forbbiden+er.ContainerIsRunning)
+	}
+
+	if a.SoftForce {
+		ws.GoError(r, er.InternalServerError, cont.Stop, cont.Delete)
+	} else {
+		ws.GoError(r, er.InternalServerError, cont.Kill, cont.Delete)
 	}
 
 	return ws.Ok(r, "ok")

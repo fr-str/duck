@@ -31,7 +31,7 @@ type Request struct {
 	Data      json.RawMessage
 	Timeout   uint // in seconds
 
-	ResultCh chan Response
+	ResultCh chan<- Response
 	// action - request ctx, with timeout
 	//
 	// subscription - session ctx, canceled when subscription is changed or disconnected
@@ -138,6 +138,7 @@ func socketHandler(conn *websocket.Conn) {
 
 // requestHandler handles every request sent from client.
 func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *websocketSession) {
+	r.ResultCh = w
 	prefix, _, _ := strings.Cut(r.Action, ".")
 	if prefix == "live" {
 		prefix = r.Action
@@ -245,17 +246,18 @@ func Error(r *Request, code er.Type) Response {
 	}
 }
 
-func GoError(r *Request, code er.Type, fn func() error) {
+func GoError(r *Request, code er.Type, fns ...func() error) {
 	go func() {
-		err := fn()
-		if err == nil {
-			return
-		}
-		data := (code % 100).String() + (code ^ (code % 100)).String()
-		r.ResultCh <- Response{
-			RequestID: r.RequestID,
-			Code:      code,
-			Data:      fmt.Sprintf("%s: %s", data, err),
+		for _, fn := range fns {
+			err := fn()
+			if err != nil {
+				data := (code % 100).String() + (code ^ (code % 100)).String()
+				r.ResultCh <- Response{
+					RequestID: r.RequestID,
+					Code:      code,
+					Data:      fmt.Sprintf("%s: %s", data, err),
+				}
+			}
 		}
 	}()
 }

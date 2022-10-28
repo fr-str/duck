@@ -15,16 +15,18 @@ func _() {
 	_ = x[Missing-500]
 	_ = x[Timeout-600]
 	_ = x[NotFound-700]
+	_ = x[Exists-800]
 	_ = x[ReqID-0]
 	_ = x[Action-1]
 	_ = x[ContainerName-2]
 	_ = x[Container-3]
-	_ = x[UntilInLive-4]
-	_ = x[Decode-5]
+	_ = x[ContainerIsRunning-4]
+	_ = x[UntilInLive-5]
+	_ = x[Decode-6]
 }
 
 const (
-	_Type_name_0 = "ReqIDActionContainerNameContainerUntilInLiveDecode"
+	_Type_name_0 = "ReqIDActionContainerNameContainerContainerIsRunningUntilInLiveDecode"
 	_Type_name_1 = "InternalServerError"
 	_Type_name_2 = "OK"
 	_Type_name_3 = "Error"
@@ -32,15 +34,16 @@ const (
 	_Type_name_5 = "Missing"
 	_Type_name_6 = "Timeout"
 	_Type_name_7 = "NotFound"
+	_Type_name_8 = "Exists"
 )
 
 var (
-	_Type_index_0 = [...]uint8{0, 5, 11, 24, 33, 44, 50}
+	_Type_index_0 = [...]uint8{0, 5, 11, 24, 33, 51, 62, 68}
 )
 
 func (i Type) String() string {
 	switch {
-	case i <= 5:
+	case i <= 6:
 		return _Type_name_0[_Type_index_0[i]:_Type_index_0[i+1]]
 	case i == 100:
 		return _Type_name_1
@@ -56,6 +59,8 @@ func (i Type) String() string {
 		return _Type_name_6
 	case i == 700:
 		return _Type_name_7
+	case i == 800:
+		return _Type_name_8
 	default:
 		return "Type(" + strconv.FormatInt(int64(i), 10) + ")"
 	}

@@ -14,6 +14,7 @@ const (
 	Missing   Type = 500
 	Timeout   Type = 600
 	NotFound  Type = 700
+	Exists    Type = 800
 )
 
 const (
@@ -21,6 +22,7 @@ const (
 	Action
 	ContainerName
 	Container
+	ContainerIsRunning
 	UntilInLive
 	Decode
 )
