@@ -31,6 +31,7 @@ type Request struct {
 	Data      json.RawMessage
 	Timeout   uint // in seconds
 
+	ResultCh chan Response
 	// action - request ctx, with timeout
 	//
 	// subscription - session ctx, canceled when subscription is changed or disconnected
@@ -236,12 +237,27 @@ func panicHandler(r *Request, w chan<- Response) {
 }
 
 func Error(r *Request, code er.Type) Response {
-	data := (code ^ (code % 100)).String() + (code % 100).String()
+	data := (code % 100).String() + (code ^ (code % 100)).String()
 	return Response{
 		RequestID: r.RequestID,
 		Code:      code,
 		Data:      data,
 	}
+}
+
+func GoError(r *Request, code er.Type, fn func() error) {
+	go func() {
+		err := fn()
+		if err == nil {
+			return
+		}
+		data := (code % 100).String() + (code ^ (code % 100)).String()
+		r.ResultCh <- Response{
+			RequestID: r.RequestID,
+			Code:      code,
+			Data:      fmt.Sprintf("%s: %s", data, err),
+		}
+	}()
 }
 
 func Ok(r *Request, data any) Response {

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"docker-project/docker/client"
 	log "docker-project/logger"
 	"errors"
 	"io"
@@ -46,7 +47,7 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 		untilAmount = 1000
 	}
 
-	rc, err := dcli.ContainerLogs(context.TODO(), contName, types.ContainerLogsOptions{
+	rc, err := dcli.Cli.ContainerLogs(context.TODO(), contName, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Since:      tsince,

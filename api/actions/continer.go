@@ -13,20 +13,14 @@ import (
 )
 
 type Containers struct {
-	EnvID string
-	Key   string
-	Value string
+	Name string
 }
 
 func (a *Containers) Handle(r *ws.Request) ws.Response {
 	act := strings.TrimPrefix(r.Action, "container.")
 	switch act {
-	case "stop":
-		return a.Stop(r)
-	case "start":
-		return a.Start(r)
-	case "restart":
-		return a.Restart(r)
+	case "stop", "restart", "start", "kill":
+		return a.SSRK(r)
 	case "list":
 		return a.List(r)
 
@@ -53,9 +47,26 @@ func (a *Containers) HandleSub(r *ws.Request, w chan<- ws.Response) {
 	}
 }
 
-func (a *Containers) Stop(r *ws.Request) ws.Response    { return ws.Ok(r, nil) }
-func (a *Containers) Start(r *ws.Request) ws.Response   { return ws.Ok(r, nil) }
-func (a *Containers) Restart(r *ws.Request) ws.Response { return ws.Ok(r, nil) }
+func (a *Containers) SSRK(r *ws.Request) ws.Response {
+	cont, ok := docker.ContainerMap.GetFull(a.Name)
+	if !ok {
+		return ws.Error(r, er.NotFound+er.Container)
+	}
+
+	switch strings.TrimPrefix(r.Action, "container.") {
+	case "start":
+		ws.GoError(r, er.InternalServerError, cont.Start)
+	case "stop":
+		ws.GoError(r, er.InternalServerError, cont.Stop)
+	case "restart":
+		ws.GoError(r, er.InternalServerError, cont.Restart)
+	case "kill":
+		ws.GoError(r, er.InternalServerError, cont.Kill)
+	}
+
+	return ws.Ok(r, "ok")
+}
+
 func (a *Containers) List(r *ws.Request) ws.Response {
 	m := map[string]structs.Container{}
 	for v := range docker.ContainerMap.Iter() {

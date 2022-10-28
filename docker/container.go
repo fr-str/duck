@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	dcli "docker-project/docker/client"
 	log "docker-project/logger"
 	"docker-project/structs"
 	"strings"
@@ -30,13 +31,14 @@ func SetContainer(dcont types.Container) {
 		ev = co.Events
 	}
 
-	t, err := dcli.ContainerInspect(context.TODO(), cont.ID)
+	t, err := dcli.Cli.ContainerInspect(context.TODO(), cont.ID)
 	if err != nil {
 		log.Error(err)
 	}
 
 	log.Debug("Setting", name)
 	c := structs.Container{
+		ID:      cont.ID,
 		Name:    name,
 		Tty:     t.Config.Tty,
 		Image:   cont.Image,
