@@ -6,14 +6,17 @@ Be better faster stronger
 ## Example WS messages
 [api docs](https://github.com/fr-str/docker-project/blob/master/api/actions/README.md)
 
-### TODO
- - [ ] better name
- - [ ] find a frontend dev
+### CANDO
  - [X] ws api
  - [X] live container statuses
  - [X] live logs
  - [X] start/stop(restart) containers
- - [ ] delete containers
+ - [X] delete containers
+ - [X] apply docker-compse
+
+### TODO
+ - [ ] better name
+ - [ ] find a frontend dev
  - [ ] create containers
  - [ ] attach to containers
  - [ ] better way to navigate thru logs

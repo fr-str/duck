@@ -64,15 +64,16 @@ func (a *Logs) HandleSub(r *ws.Request, w chan<- ws.Response) {
 	var bline []byte
 	sc := bufio.NewScanner(rc)
 	for {
-		if !sc.Scan() {
-			time.Sleep(100 * time.Millisecond)
-			continue
-		}
 		select {
 		case <-r.Ctx.Done():
 			rc.Close()
 			return
 		default:
+		}
+
+		if !sc.Scan() {
+			time.Sleep(50 * time.Millisecond)
+			continue
 		}
 
 		bline = sc.Bytes()

@@ -1,21 +1,27 @@
 package actions
 
 import (
+	"bufio"
 	ws "docker-project/api/server"
 	log "docker-project/logger"
+	"io"
+	"time"
 
 	"docker-project/docker"
 	"docker-project/er"
 	"docker-project/structs"
 	"strings"
 
+	"github.com/timoni-io/go-utils/cmd"
 	"github.com/timoni-io/go-utils/types"
 )
 
 type Containers struct {
-	Name      string
-	SoftForce bool
-	Force     bool
+	Name         string
+	ComposePath  string
+	ComposeBuild bool
+	SoftForce    bool
+	Force        bool
 }
 
 func (a *Containers) Handle(r *ws.Request) ws.Response {
@@ -25,6 +31,8 @@ func (a *Containers) Handle(r *ws.Request) ws.Response {
 		return a.SSRK(r)
 	case "list":
 		return a.List(r)
+	case "compose":
+		return a.ApplyDockerCompose(r)
 	case "create":
 		return a.Create(r)
 	case "delete":
@@ -81,6 +89,53 @@ func (a *Containers) Create(r *ws.Request) ws.Response {
 	//TODO
 
 	return ws.Ok(r, "ok")
+}
+
+func (a *Containers) ApplyDockerCompose(r *ws.Request) ws.Response {
+	log.Debug("ApplyDockerCompose", a.ComposePath)
+	//TODO support custom command
+	args := []string{"up", "-d"}
+	pr := func(stdout io.ReadCloser, stderr io.ReadCloser) {
+		go readLogs(r, stderr)
+		readLogs(r, stdout)
+	}
+
+	if a.ComposeBuild {
+		args = append(args, "--build")
+	}
+
+	ws.GoError(r, er.InternalServerError, func() error {
+		log.Info("docker-compose", args)
+		log.Info(pr)
+		return cmd.NewCommand("docker-compose", args...).Run(&cmd.RunOptions{
+			Dir:        a.ComposePath,
+			PipeReader: pr,
+			Timeout:    0,
+		})
+	})
+
+	return ws.Ok(r, "ok")
+}
+
+func readLogs(r *ws.Request, rc io.ReadCloser) {
+	var line string
+	sc := bufio.NewScanner(rc)
+	for sc.Scan() {
+		line = sc.Text()
+		if line == "" {
+			continue
+		}
+		log.Debug(line)
+
+		r.ResultCh <- ws.Ok(r, []docker.Log{{
+			Timestamp: time.Now().UnixNano(),
+			Message:   line,
+		}})
+	}
+	r.ResultCh <- ws.Ok(r, []docker.Log{{
+		Timestamp: time.Now().UnixNano(),
+		Message:   "End of stream",
+	}})
 }
 
 func (a *Containers) Delete(r *ws.Request) ws.Response {
