@@ -99,6 +99,10 @@ func (dcont DockerContainer) getMounts() (mounts []structs.Mount) {
 	for _, mount := range dcont.Mounts {
 		mounts = append(mounts, structs.Mount(mount))
 	}
+	sort.Slice(mounts, func(i, j int) bool {
+		return mounts[i].Destination < mounts[j].Destination
+	})
+
 	return
 }
 
@@ -106,5 +110,9 @@ func (dcont DockerContainer) getPorts() (Ports []structs.Port) {
 	for _, port := range dcont.Ports {
 		Ports = append(Ports, structs.Port(port))
 	}
+
+	sort.Slice(Ports, func(i, j int) bool {
+		return Ports[i].PrivatePort < Ports[j].PrivatePort
+	})
 	return
 }

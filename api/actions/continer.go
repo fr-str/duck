@@ -44,23 +44,6 @@ func (a *Containers) Handle(r *ws.Request) ws.Response {
 	}
 }
 
-func (a *Containers) HandleSub(r *ws.Request, w chan<- ws.Response) {
-	for el := range docker.ContainerMap.Iter() {
-		w <- ws.Ok(r, types.WatchMsg[string, structs.Container]{
-			Event: types.PutEvent,
-			Item:  el,
-		})
-	}
-
-	for v := range docker.ContainerMap.Register() {
-		select {
-		case <-r.Ctx.Done():
-			return
-		case w <- ws.Ok(r, v):
-		}
-	}
-}
-
 func (a *Containers) SSRK(r *ws.Request) ws.Response {
 	cont, ok := docker.ContainerMap.GetFull(a.Name)
 	if !ok {

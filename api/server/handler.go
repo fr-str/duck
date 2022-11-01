@@ -140,9 +140,6 @@ func socketHandler(conn *websocket.Conn, service *string) {
 func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *websocketSession) {
 	r.ResultCh = w
 	prefix, _, _ := strings.Cut(r.Action, ".")
-	if prefix == "live" {
-		prefix = r.Action
-	}
 
 	// Get action handler
 	handler, exists := handlers[prefix]
@@ -269,6 +266,14 @@ func GoError(r *Request, code er.Type, fns ...func() error) {
 func Ok(r *Request, data any) Response {
 	return Response{
 		RequestID: r.RequestID,
+		Code:      er.OK,
+		Data:      data,
+	}
+}
+
+func Live(requestID string, data any) Response {
+	return Response{
+		RequestID: requestID,
 		Code:      er.OK,
 		Data:      data,
 	}

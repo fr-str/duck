@@ -15,8 +15,7 @@ func Start(port string) error {
 	go docker.HandleEvents(dcli.Cli)
 
 	ws.RegisterAction[actions.Containers]("container")
-	ws.RegisterSubscription[actions.Containers]("live.containers")
-	ws.RegisterSubscription[actions.Logs]("live.logs")
+	ws.RegisterSubscription[actions.Live]("live")
 	ws.RegisterAction[actions.Logs]("logs")
 
 	http.HandleFunc("/api", ws.Handler)
