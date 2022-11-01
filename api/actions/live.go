@@ -9,6 +9,7 @@ import (
 	"docker-project/structs"
 	"encoding/json"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -87,6 +88,9 @@ func (a *Logs) streamLogs(r *ws.Request, w chan<- ws.Response, containerName str
 		w <- ws.Error(r, er.InternalServerError)
 		return
 	}
+	sort.Slice(logs, func(i, j int) bool {
+		return logs[i].Timestamp > logs[j].Timestamp
+	})
 	w <- ws.Live("logs", logs)
 
 	var strip bool
