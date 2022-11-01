@@ -61,18 +61,3 @@ func (cont Container) Delete() error {
 	log.Debug("Deleting container", cont.Name)
 	return dcli.Cli.ContainerRemove(context.TODO(), cont.ID, types.ContainerRemoveOptions{})
 }
-
-func (cont Container) Attach() error {
-	log.Debug("Attaching to container", cont.Name)
-	//WIP
-	return nil
-	dcli.Cli.ContainerAttach(context.TODO(), cont.ID, types.ContainerAttachOptions{
-		Stream:     false,
-		Stdin:      false,
-		Stdout:     false,
-		Stderr:     false,
-		DetachKeys: "",
-		Logs:       false,
-	})
-	return nil
-}

@@ -57,24 +57,24 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Error Upgrading"))
 		return
 	}
-
+	var service string = ""
 	go func() {
 		ip := utils.RequestIP(r)
-		service := utils.DNSLookup(ip)
+		service = utils.DNSLookup(ip)
 		if service == "" {
 			service = ip
 		}
 		log.Info("New connection " + service)
 	}()
 
-	socketHandler(conn)
+	socketHandler(conn, &service)
 }
 
 func auth(r *http.Request) bool {
 	return true
 }
 
-func socketHandler(conn *websocket.Conn) {
+func socketHandler(conn *websocket.Conn, service *string) {
 	// session ctx
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -90,7 +90,7 @@ func socketHandler(conn *websocket.Conn) {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Debug("Closing writer")
+				log.Debug("Closing writer", *service)
 				return
 
 			case res := <-w:
@@ -114,7 +114,7 @@ func socketHandler(conn *websocket.Conn) {
 				log.Error("Error during message reading:", err)
 			}
 			defer conn.Close()
-			log.Debug("Closing connection")
+			log.Info("Closing connection", *service)
 			return // will cancel ctx
 		}
 
@@ -155,8 +155,8 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 	// Decode action data
 	action, err := handler.decode(r.Data)
 	if err != nil {
-		log.Error(er.InternalServerError.String())
-		w <- Error(r, er.InternalServerError)
+		log.Error(er.Invalid.String() + er.ActionArgs.String())
+		w <- Error(r, er.Invalid+er.ActionArgs, prettyPrintActionFieldsForFrontend(reflect.New(handler.action)))
 		return
 	}
 
@@ -237,8 +237,12 @@ func panicHandler(r *Request, w chan<- Response) {
 	}
 }
 
-func Error(r *Request, code er.Type) Response {
-	data := (code % 100).String() + (code ^ (code % 100)).String()
+func Error(r *Request, code er.Type, d ...any) Response {
+	var data any
+	data = (code % 100).String() + (code - (code % 100)).String()
+	if len(d) > 0 {
+		data = d[0]
+	}
 	return Response{
 		RequestID: r.RequestID,
 		Code:      code,
@@ -268,4 +272,13 @@ func Ok(r *Request, data any) Response {
 		Code:      er.OK,
 		Data:      data,
 	}
+}
+
+func prettyPrintActionFieldsForFrontend(v reflect.Value) map[string]string {
+	val := reflect.Indirect(v)
+	m := map[string]string{}
+	for i := 0; i < val.NumField(); i++ {
+		m[val.Type().Field(i).Name] = val.Type().Field(i).Type.String()
+	}
+	return m
 }

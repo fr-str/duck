@@ -6,6 +6,7 @@ import (
 	"docker-project/docker"
 	"docker-project/er"
 	log "docker-project/logger"
+	"io"
 	"strings"
 	"time"
 )
@@ -34,9 +35,9 @@ func (a *Logs) Handle(r *ws.Request) ws.Response {
 
 // What a mess lol
 func (a *Logs) HandleSub(r *ws.Request, w chan<- ws.Response) {
-	if a.Until != 0 {
-		log.Debug(er.Forbbiden.String() + er.UntilInLive.String())
-		w <- ws.Error(r, er.Forbbiden+er.UntilInLive)
+	cont, ok := docker.ContainerMap.GetFull(a.ContainerName)
+	if !ok {
+		w <- ws.Error(r, er.NotFound+er.Container)
 		return
 	}
 
@@ -58,8 +59,29 @@ func (a *Logs) HandleSub(r *ws.Request, w chan<- ws.Response) {
 	if !docker.ContainerMap.Get(a.ContainerName).Tty {
 		strip = true
 	}
+	var rc io.ReadCloser
+	for {
+		select {
+		case <-r.Ctx.Done():
+			if rc != nil {
+				rc.Close()
+			}
+			return
+		default:
+		}
+		if cont.State == "exited" {
+			time.Sleep(1 * time.Second)
+			log.Debug(`cont.State == "exited" `)
+			continue
+		}
+		_, rc, _ = docker.GetLogs(a.ContainerName, 0, a.Since, 0, true)
+		log.Debug("reading", a.ContainerName)
+		readL(r, rc, w, strip)
+		time.Sleep(50 * time.Millisecond)
+	}
+}
 
-	_, rc, _ := docker.GetLogs(a.ContainerName, 0, a.Since, 0, true)
+func readL(r *ws.Request, rc io.ReadCloser, w chan<- ws.Response, strip bool) {
 	var line string
 	var bline []byte
 	sc := bufio.NewScanner(rc)
@@ -72,8 +94,7 @@ func (a *Logs) HandleSub(r *ws.Request, w chan<- ws.Response) {
 		}
 
 		if !sc.Scan() {
-			time.Sleep(50 * time.Millisecond)
-			continue
+			return
 		}
 
 		bline = sc.Bytes()

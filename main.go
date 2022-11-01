@@ -3,7 +3,7 @@ package main
 import (
 	"docker-project/api"
 	"docker-project/config"
-	"log"
+	log "docker-project/logger"
 )
 
 func main() {

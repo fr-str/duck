@@ -11,34 +11,36 @@ func _() {
 	_ = x[InternalServerError-100]
 	_ = x[OK-200]
 	_ = x[Error-300]
-	_ = x[Forbbiden-400]
+	_ = x[NotFound-400]
 	_ = x[Missing-500]
 	_ = x[Timeout-600]
-	_ = x[NotFound-700]
+	_ = x[Forbbiden-700]
 	_ = x[Exists-800]
+	_ = x[Invalid-900]
 	_ = x[ReqID-0]
 	_ = x[Action-1]
-	_ = x[ContainerName-2]
-	_ = x[Container-3]
-	_ = x[ContainerIsRunning-4]
-	_ = x[UntilInLive-5]
+	_ = x[ActionArgs-2]
+	_ = x[ContainerName-3]
+	_ = x[Container-4]
+	_ = x[ContainerIsRunning-5]
 	_ = x[Decode-6]
 }
 
 const (
-	_Type_name_0 = "ReqIDActionContainerNameContainerContainerIsRunningUntilInLiveDecode"
+	_Type_name_0 = "ReqIDActionActionArgsContainerNameContainerContainerIsRunningDecode"
 	_Type_name_1 = "InternalServerError"
 	_Type_name_2 = "OK"
 	_Type_name_3 = "Error"
-	_Type_name_4 = "Forbbiden"
+	_Type_name_4 = "NotFound"
 	_Type_name_5 = "Missing"
 	_Type_name_6 = "Timeout"
-	_Type_name_7 = "NotFound"
+	_Type_name_7 = "Forbbiden"
 	_Type_name_8 = "Exists"
+	_Type_name_9 = "Invalid"
 )
 
 var (
-	_Type_index_0 = [...]uint8{0, 5, 11, 24, 33, 51, 62, 68}
+	_Type_index_0 = [...]uint8{0, 5, 11, 21, 34, 43, 61, 67}
 )
 
 func (i Type) String() string {
@@ -61,6 +63,8 @@ func (i Type) String() string {
 		return _Type_name_7
 	case i == 800:
 		return _Type_name_8
+	case i == 900:
+		return _Type_name_9
 	default:
 		return "Type(" + strconv.FormatInt(int64(i), 10) + ")"
 	}

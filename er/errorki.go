@@ -10,19 +10,20 @@ const (
 
 	OK        Type = 200
 	Error     Type = 300
-	Forbbiden Type = 400
+	NotFound  Type = 400
 	Missing   Type = 500
 	Timeout   Type = 600
-	NotFound  Type = 700
+	Forbbiden Type = 700
 	Exists    Type = 800
+	Invalid   Type = 900
 )
 
 const (
 	ReqID Type = iota
 	Action
+	ActionArgs
 	ContainerName
 	Container
 	ContainerIsRunning
-	UntilInLive
 	Decode
 )

@@ -1,9 +1,17 @@
 package config
 
-import "os"
+import (
+	"github.com/timoni-io/go-utils/env"
+)
 
 var (
-	LogMode  = os.Getenv("LOG_MODE")
-	LogLevel = os.Getenv("LOG_LEVEL")
-	Port     = os.Getenv("DM_PORT")
+	LogMode  = env.Get("LOG_MODE", "prod")
+	LogLevel = env.Get("LOG_LEVEL", "i")
+	Port     = func() string {
+		p := env.Get("DP_PORT", "6666")
+		if p[0] != ':' {
+			p = ":" + p
+		}
+		return p
+	}()
 )

@@ -6,7 +6,7 @@ require (
 	github.com/docker/docker v20.10.19+incompatible
 	github.com/gorilla/websocket v1.5.0
 	github.com/moby/moby v20.10.21+incompatible
-	github.com/timoni-io/go-utils v0.0.0-20221014161135-e14fe5b4c569
+	github.com/timoni-io/go-utils v0.0.0-20221031161938-2df7100c7101
 	go.uber.org/zap v1.23.0
 )
 

@@ -29,7 +29,7 @@ const (
 	subscriptionT
 )
 
-var handlers = map[string]*actionHandler{}
+var handlers = map[string]actionHandler{}
 
 func RegisterAction[T any](name string) {
 	a := (*T)(nil)
@@ -42,7 +42,7 @@ func RegisterAction[T any](name string) {
 		log.Fatal(fmt.Sprintf("handler `%s` already registered", name))
 	}
 
-	handlers[name] = &actionHandler{
+	handlers[name] = actionHandler{
 		t:      actionT,
 		action: reflect.TypeOf(a).Elem(),
 	}
@@ -59,7 +59,7 @@ func RegisterSubscription[T any](name string) {
 		log.Fatal(fmt.Sprintf("handler `%s` already registered", name))
 	}
 
-	handlers[name] = &actionHandler{
+	handlers[name] = actionHandler{
 		t:      subscriptionT,
 		action: reflect.TypeOf(a).Elem(),
 	}

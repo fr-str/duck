@@ -81,6 +81,14 @@ func (a *Containers) SSRK(r *ws.Request) ws.Response {
 	return ws.Ok(r, "ok")
 }
 
+func (a *Containers) List(r *ws.Request) ws.Response {
+	m := map[string]structs.Container{}
+	for v := range docker.ContainerMap.Iter() {
+		m[v.Key] = v.Value
+	}
+	return ws.Ok(r, m)
+}
+
 func (a *Containers) Create(r *ws.Request) ws.Response {
 	_, ok := docker.ContainerMap.GetFull(a.Name)
 	if ok {
@@ -155,12 +163,4 @@ func (a *Containers) Delete(r *ws.Request) ws.Response {
 	}
 
 	return ws.Ok(r, "ok")
-}
-
-func (a *Containers) List(r *ws.Request) ws.Response {
-	m := map[string]structs.Container{}
-	for v := range docker.ContainerMap.Iter() {
-		m[v.Key] = v.Value
-	}
-	return ws.Ok(r, m)
 }
