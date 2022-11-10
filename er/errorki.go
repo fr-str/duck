@@ -2,9 +2,7 @@ package er
 
 type Type uint16
 
-// ErrMissReqID = errors.New("invalid request - missing `RequestID`")
-// ErrMissAction = errors.New("invalid request - missing `Action`")
-
+// fix this
 const (
 	InternalServerError Type = 100
 
@@ -26,4 +24,5 @@ const (
 	Container
 	ContainerIsRunning
 	Decode
+	Exited
 )

@@ -35,6 +35,8 @@ func (a *Containers) Handle(r *ws.Request) ws.Response {
 		return a.ApplyDockerCompose(r)
 	case "create":
 		return a.Create(r)
+	case "inspect":
+		return a.Inspect(r)
 	case "delete":
 		return a.Delete(r)
 
@@ -80,6 +82,15 @@ func (a *Containers) Create(r *ws.Request) ws.Response {
 	//TODO
 
 	return ws.Ok(r, "ok")
+}
+
+func (a *Containers) Inspect(r *ws.Request) ws.Response {
+	log.Debug("Inspect", a.Name)
+	cont, ok := docker.DockerContainerMap.GetFull(a.Name)
+	if !ok {
+		return ws.Error(r, er.NotFound+er.Container)
+	}
+	return ws.Ok(r, cont)
 }
 
 func (a *Containers) ApplyDockerCompose(r *ws.Request) ws.Response {

@@ -1,3 +1,5 @@
 .vscode
 docker-run.sh
 dockerfile
+front/node_modules
+docker-project

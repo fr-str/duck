@@ -2,8 +2,10 @@ package docker
 
 import (
 	"context"
+	dcli "docker-project/docker/client"
 	log "docker-project/logger"
 	"docker-project/structs"
+	"strings"
 	"time"
 
 	ty "github.com/timoni-io/go-utils/types"
@@ -58,11 +60,40 @@ func handleContainer(cli *client.Client, ev events.Message) {
 	name := ev.Actor.Attributes["name"]
 	log.Debug(ev.Type, ev.Action, name)
 	cont, ok := ContainerMap.GetFull(name)
-	if !ok {
+	if !ok && ev.Action != "rename" {
 		return
 	}
 	if ev.Action == "destroy" {
 		ContainerMap.Delete(name)
+		DockerContainerMap.Delete(name)
+		return
+	}
+
+	if ev.Action == "rename" {
+		_, oldName, ok := strings.Cut(name, "_")
+		if !ok {
+			log.Error("REPORT THIS: Could not cut renamed event name {", name, "}")
+			return
+		}
+		cont, ok := ContainerMap.GetFull(oldName)
+		if !ok {
+			return
+		}
+
+		ContainerMap.Delete(oldName)
+		DockerContainerMap.Delete(oldName)
+		ContainerMap.Set(name, cont)
+		go func() {
+			t, err := dcli.Cli.ContainerInspect(context.TODO(), cont.ID)
+			if err != nil {
+				if strings.Contains(err.Error(), "No such container") {
+					return
+				}
+				log.Error(err)
+			}
+			log.Debug("Set container", t.Name)
+			DockerContainerMap.Set(strings.TrimLeft(t.Name, "/"), t)
+		}()
 		return
 	}
 

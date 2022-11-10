@@ -24,10 +24,11 @@ func _() {
 	_ = x[Container-4]
 	_ = x[ContainerIsRunning-5]
 	_ = x[Decode-6]
+	_ = x[Exited-7]
 }
 
 const (
-	_Type_name_0 = "ReqIDActionActionArgsContainerNameContainerContainerIsRunningDecode"
+	_Type_name_0 = "ReqIDActionActionArgsContainerNameContainerContainerIsRunningDecodeExited"
 	_Type_name_1 = "InternalServerError"
 	_Type_name_2 = "OK"
 	_Type_name_3 = "Error"
@@ -40,12 +41,12 @@ const (
 )
 
 var (
-	_Type_index_0 = [...]uint8{0, 5, 11, 21, 34, 43, 61, 67}
+	_Type_index_0 = [...]uint8{0, 5, 11, 21, 34, 43, 61, 67, 73}
 )
 
 func (i Type) String() string {
 	switch {
-	case i <= 6:
+	case i <= 7:
 		return _Type_name_0[_Type_index_0[i]:_Type_index_0[i+1]]
 	case i == 100:
 		return _Type_name_1

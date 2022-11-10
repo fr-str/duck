@@ -52,7 +52,8 @@ func (a *Containers) HandleLive(r *ws.Request, w chan<- ws.Response) {
 		})
 	}
 
-	for v := range docker.ContainerMap.Register() {
+	contEvents := docker.ContainerMap.Register(r.Ctx)
+	for v := range contEvents {
 		select {
 		case <-r.Ctx.Done():
 			return
@@ -64,40 +65,53 @@ func (a *Containers) HandleLive(r *ws.Request, w chan<- ws.Response) {
 // What a mess lol
 func (a *Logs) HandleLive(r *ws.Request, w chan<- ws.Response) {
 	log.Debug("streaming logs for", a.ContainerNames)
+	allLogs := make([]docker.Log, 0)
+	for _, cName := range a.ContainerNames {
+		_, ok := docker.ContainerMap.GetFull(cName)
+		if !ok {
+			w <- ws.Error(r, er.NotFound+er.Container)
+			continue
+		}
+
+		logs, _, err := docker.GetLogs(cName, a.Amount, a.Since, 0, false)
+		if err != nil {
+			if err == docker.ErrContNotExist {
+				log.Debug(er.Container.String() + er.NotFound.String())
+				w <- ws.Error(r, er.Container+er.NotFound)
+				continue
+			}
+
+			log.Error(er.InternalServerError.String())
+			w <- ws.Error(r, er.InternalServerError, "Reading "+cName+" logs")
+			continue
+		}
+		allLogs = append(allLogs, logs...)
+	}
+
+	sort.Slice(allLogs, func(i, j int) bool {
+		return allLogs[i].Timestamp > allLogs[j].Timestamp
+	})
+
+	w <- ws.Live("logs", allLogs)
+
 	for _, cName := range a.ContainerNames {
 		go a.streamLogs(r, w, cName)
 	}
 }
 
 func (a *Logs) streamLogs(r *ws.Request, w chan<- ws.Response, containerName string) {
-	cont, ok := docker.ContainerMap.GetFull(containerName)
-	if !ok {
-		w <- ws.Error(r, er.NotFound+er.Container)
+	if !docker.ContainerMap.Exists(containerName) {
 		return
 	}
-
-	logs, _, err := docker.GetLogs(containerName, a.Amount, a.Since, 0, false)
-	if err != nil {
-		if err == docker.ErrContNotExist {
-			log.Debug(er.Container.String() + er.NotFound.String())
-			w <- ws.Error(r, er.Container+er.NotFound)
-			return
-		}
-
-		log.Error(er.InternalServerError.String())
-		w <- ws.Error(r, er.InternalServerError)
-		return
-	}
-	sort.Slice(logs, func(i, j int) bool {
-		return logs[i].Timestamp > logs[j].Timestamp
-	})
-	w <- ws.Live("logs", logs)
+	// FIXME: this is a mess
 
 	var strip bool
 	if !docker.ContainerMap.Get(containerName).Tty {
 		strip = true
 	}
+
 	var rc io.ReadCloser
+	var err error
 	for {
 		select {
 		case <-r.Ctx.Done():
@@ -107,32 +121,71 @@ func (a *Logs) streamLogs(r *ws.Request, w chan<- ws.Response, containerName str
 			return
 		default:
 		}
+
+		cont, ok := docker.ContainerMap.GetFull(containerName)
+		if !ok {
+			w <- ws.Error(r, er.NotFound+er.Container)
+			return
+		}
+
 		if cont.State == "exited" {
 			time.Sleep(1 * time.Second)
-			log.Debug(`cont.State == "exited" `)
-			continue
+			log.Debug(containerName, `cont.State == "exited" `)
+			w <- ws.Error(r, er.Error+er.Container+er.Exited, containerName)
+			return
 		}
-		_, rc, _ = docker.GetLogs(containerName, 0, a.Since, 0, true)
+
+		_, rc, err = docker.GetLogs(containerName, 0, a.Since, 0, true)
+		if err != nil {
+			if err == docker.ErrContNotExist {
+				log.Debug(er.Container.String() + er.NotFound.String())
+				w <- ws.Error(r, er.Container+er.NotFound)
+				return
+			}
+
+			log.Error(er.InternalServerError.String())
+			w <- ws.Error(r, er.InternalServerError, "Reading "+containerName+" logs")
+			return
+		}
+
 		log.Debug("reading", containerName)
-		readL(r, rc, w, strip)
+
+		readL(r, rc, w, containerName, strip)
 		time.Sleep(50 * time.Millisecond)
 	}
 }
 
-func readL(r *ws.Request, rc io.ReadCloser, w chan<- ws.Response, strip bool) {
+func readL(r *ws.Request, rc io.ReadCloser, w chan<- ws.Response, containerName string, strip bool) {
+
 	var line string
 	var bline []byte
+	scanChan := make(chan bool)
+	canScanChan := make(chan bool)
 	sc := bufio.NewScanner(rc)
+	go func() {
+		for {
+			select {
+			case <-r.Ctx.Done():
+				close(scanChan)
+				return
+			case scanChan <- sc.Scan():
+				if !<-canScanChan { // wait for the scan to be done
+					return
+				}
+			}
+		}
+	}()
+
 	for {
 		select {
 		case <-r.Ctx.Done():
 			rc.Close()
 			return
-		default:
-		}
-
-		if !sc.Scan() {
-			return
+		case b := <-scanChan:
+			if !b {
+				canScanChan <- false
+				return
+			}
 		}
 
 		bline = sc.Bytes()
@@ -159,6 +212,8 @@ func readL(r *ws.Request, rc io.ReadCloser, w chan<- ws.Response, strip bool) {
 		w <- ws.Live("logs", []docker.Log{{
 			Timestamp: ti.UnixNano(),
 			Message:   msg,
+			Container: containerName,
 		}})
+		canScanChan <- true
 	}
 }

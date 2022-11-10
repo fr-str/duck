@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"docker-project/docker/client"
+	dcli "docker-project/docker/client"
 	log "docker-project/logger"
 	"errors"
 	"io"
@@ -17,8 +17,9 @@ import (
 )
 
 type Log struct {
-	Timestamp int64
+	Container string
 	Message   string
+	Timestamp int64
 }
 
 var (
@@ -26,7 +27,8 @@ var (
 )
 
 func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Log, io.ReadCloser, error) {
-	if !ContainerMap.Exists(contName) {
+	cont, ok := ContainerMap.GetFull(contName)
+	if !ok {
 		return nil, nil, ErrContNotExist
 	}
 	log.Debugw("Reading logs for "+contName, "amount", amount, "since", since, "until", until, "follow", follow)
@@ -42,6 +44,7 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 
 	// TODO better way to navigate thru logs
 	// maybe just get container logfile??
+	// TODO add parser to separate out timestamp,level and message
 	untilAmount := amount
 	if until != 0 {
 		untilAmount = 1000
@@ -68,7 +71,7 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 
 	var r io.Reader = rc
 
-	if !ContainerMap.Get(contName).Tty {
+	if !cont.Tty {
 		buff := bytes.NewBuffer(make([]byte, 0))
 		r = buff
 		stdcopy.StdCopy(buff, buff, rc)
@@ -77,7 +80,6 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 	var i int
 	var line string
 	logs := []Log{}
-
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		line = string(sc.Bytes())
@@ -94,6 +96,7 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 		logs = append(logs, Log{
 			Timestamp: ti.UnixNano(),
 			Message:   msg,
+			Container: contName,
 		})
 		i++
 	}
@@ -103,5 +106,4 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 
 	log.Debug("log num", i)
 	return logs, nil, nil
-
 }

@@ -5,9 +5,10 @@ go 1.19
 require (
 	github.com/docker/docker v20.10.19+incompatible
 	github.com/evanphx/json-patch v0.5.2
+	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/moby/moby v20.10.21+incompatible
-	github.com/timoni-io/go-utils v0.0.0-20221031161938-2df7100c7101
+	github.com/timoni-io/go-utils v0.0.0-20221110182434-d8e5bbc6c392
 	go.uber.org/zap v1.23.0
 )
 
