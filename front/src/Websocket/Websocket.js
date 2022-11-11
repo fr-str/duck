@@ -8,7 +8,7 @@ export var WS = null;
 
 export function Connect() {
 
-    WS = new WebSocket("wss://docker-project.dodupy.dev/api");
+    WS = new WebSocket("localhost:6666");
     WS.onopen = () => {
         console.log("Connected to websocket");
         Live();
