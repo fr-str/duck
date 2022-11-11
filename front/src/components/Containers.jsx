@@ -1,6 +1,7 @@
 import * as React from 'react';
 import moment from 'moment';
 import { addCont, remCont } from '../app/ws'
+import { clearInspect } from '../app/containers'
 import { useSelector } from 'react-redux'
 import { Live, Send } from '../Websocket/Websocket'
 import store from '../app/store'
@@ -13,9 +14,14 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper, { paperClasses } from '@mui/material/Paper';
 import Button from '@mui/material/Button';
-import {  createTheme } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
 import Popover, { popoverClasses } from '@mui/material/Popover';
 import Typography, { typographyClasses } from '@mui/material/Typography';
+import Modal from '@mui/material/Modal';
+import Fade from '@mui/material/Fade';
+import Backdrop from '@mui/material/Backdrop';
+import Box from '@mui/material/Box';
+import {JSONTree} from 'react-json-tree'
 
 
 const Containers = (props) => {
@@ -27,26 +33,28 @@ const Containers = (props) => {
   return (
     <TableContainer component={StyledPaper}>
       <StyledTable padding='none' sx={{ minWidth: 700, maxHeight: props.style.height }} aria-label="customized table">
-        <TableHead>
-          <TableRow>
-            <StyledTableCell align="left">Container Name</StyledTableCell>
-            <StyledTableCell align="left">Status</StyledTableCell>
-            <StyledTableCell align="left">Image</StyledTableCell>
-            <StyledTableCell align="left">Crated</StyledTableCell>
-            <StyledTableCell align="left">Metrics</StyledTableCell>
-            <StyledTableCell align="center">Actions</StyledTableCell>
+        <TableHead >
+          <TableRow >
+            <StyledTableCell sx={{p:2}} align="left">Container Name</StyledTableCell>
+            <StyledTableCell sx={{p:2}} align="left">Status</StyledTableCell>
+            <StyledTableCell sx={{p:2}} align="left">Image</StyledTableCell>
+            <StyledTableCell sx={{p:2}} align="left">Crated</StyledTableCell>
+            <StyledTableCell sx={{p:2}} align="left">Metrics</StyledTableCell>
+            <StyledTableCell sx={{p:2}} align="center">Actions</StyledTableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {Array.from(containers).sort().map((cont) => {
-            let onClick = tail(cont[1].Name)
+            let onClick = () => { store.dispatch(addCont(cont[1].Name)); Live() }
             let variant = "contained"
             let name = "Tail"
+
             if (store.getState().includeContainers.value.includes(cont[1].Name)) {
               variant = "outlined"
-              onClick = untail(cont[1].Name)
+              onClick = () => { store.dispatch(remCont(cont[1].Name)); Live() }
               name = "Tailing..."
             }
+
             return (
               <StyledTableRow sx={{ p: 1 }} key={cont[1].Name}>
                 <StyledTableCell component="th" scope="cont">
@@ -56,43 +64,39 @@ const Containers = (props) => {
                 <StyledTableCell component="th" scope="cont">{cont[1].Image}</StyledTableCell>
                 <StyledTableCell component="th" scope="cont">{moment.unix(cont[1].Created).fromNow()}</StyledTableCell>
                 <StyledTableCell component="th" scope="cont">Nie ma</StyledTableCell>
-                <StyledTableCell component="th" scope="cont" align="right" style={{paddingRight:15}}>
+                <StyledTableCell component="th" scope="cont" align="right" style={{ paddingRight: 15 }}>
 
-                  <Button style={buttonStyle} variant={variant} onClick={onClick}>{name}</Button>
-
-                  <Button style={buttonStyle} variant="contained" onClick={() => { getDetails(cont[0]) }}>Details</Button>
-
-                  {/* <Button
+                  <Button
                     style={buttonStyle}
-                    variant="contained" onClick={() => { restartCont(cont[0]) }}
-                    color="warning"
-                  >Restart</Button> */}
+                    variant={variant}
+                    onClick={onClick}
+                  >{name}</Button>
+
+
+                  <Inspect cont={cont[1]} />
+                  {/* <Button 
+                  style={buttonStyle} 
+                  variant="contained" 
+                  onClick={() => { getDetails(cont[0]) }}
+                  >Inspect</Button> */}
 
                   <PopoverButton
                     style={buttonStyle}
                     theme={restartTheme}
                     text="Restart"
-                    func={() => { restartCont(cont[0]) }}
+                    func={() => { Send("restart" + cont[0], "container.restart", { "Name": cont[0] }) }}
                   />
 
                   <StartStopButton
                     cont={cont[1]}
                   />
-                  {/* <Button
-                    style={buttonStyle}
-                    variant="contained"
-                    onClick={cont[1].Status.includes("Up") ? () => { stopCont(cont[0]) } : () => { startCont(cont[0]) }}
-                    color={cont[1].Status.includes("Up") ? "error" : "success"}
-                    sx={{ width: 79 }}>
-                    {cont[1].Status.includes("Up") ? "Stop" : "Start"}
-                  </Button> */}
 
                   <PopoverButton
                     style={buttonStyle}
                     theme={killTheme}
                     text="kill"
                     disabled={cont[1].Status.includes("Exited") ? true : false}
-                    func={() => { killCont(cont[0]) }} />
+                    func={() => {  Send("kill" + cont[0], "container.kill", { "Name": cont[0] }) }} />
 
                 </StyledTableCell>
               </StyledTableRow>
@@ -147,7 +151,7 @@ function PopoverButton(props) {
           horizontal: 'left',
         }}
       >
-        <StyledTypography sx={{ p: 2 }}>
+        <StyledPopoverTypography sx={{ p: 2 }}>
           <Button variant="contained"
             style={{ background: props.theme.palette.primary.main }}
             onClick={
@@ -156,7 +160,7 @@ function PopoverButton(props) {
                 handleClose()
               }
             }>Confirm</Button>
-        </StyledTypography>
+        </StyledPopoverTypography>
       </StyledPopover>
     </span>
   );
@@ -172,7 +176,7 @@ function StartStopButton(props) {
         style={buttonStyle}
         theme={stopTheme}
         text="Stop"
-        func={() => { stopCont(cont.Name) }}
+        func={() => { Send("stop" + cont.Name, "container.stop", { "Name": cont.Name }) }}
       />
     )
   }
@@ -180,7 +184,7 @@ function StartStopButton(props) {
     <Button
       style={buttonStyle}
       variant="contained"
-      onClick={() => { startCont(cont.Name) }}
+      onClick={() => { Send("start" + cont.Name, "container.start", { "Name": cont.Name }) }}
       color={"success"}
       sx={{ width: 79 }}>
       Start
@@ -189,41 +193,76 @@ function StartStopButton(props) {
 
 }
 
+// modal
+function Inspect(props) {
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => {
+    Send("inspect", "container.inspect", { Name: props.cont.Name })
+    setOpen(true)
+  };
+  const handleClose = () => {
+    setOpen(false)
+    setTimeout(() => {
+      store.dispatch(clearInspect())
+    }, 100);
+  };
 
-// tail  will append container name to 'includeContainers'
-function tail(name) {
-  return () => { store.dispatch(addCont(name)); Live() }
+  return (
+    <span>
+      <Button style={buttonStyle} variant="contained" onClick={handleOpen}>Inspect</Button>
+      <StyledModal handleClose={handleClose} open={open} />
+    </span>
+  );
 }
 
-// untail  will remove container name from 'includeContainers'
-function untail(name) {
-  return () => { store.dispatch(remCont(name)); Live() }
+function StyledModal(props) {
+  const data = useSelector(state => state.inspect.value)
+  return (
+    <Modal
+      aria-labelledby="transition-modal-title"
+      aria-describedby="transition-modal-description"
+      open={props.open}
+      onClose={props.handleClose}
+      closeAfterTransition
+      BackdropComponent={Backdrop}
+      BackdropProps={{
+        timeout: 500,
+      }}
+    >
+      <Fade in={props.open}>
+        <Box sx={boxStyle}>
+          <Typography
+            style={{ backgroundColor:'#002b36', color: "white", fontSize: 14, fontWeight: 600, marginBottom: 10 }}
+            id="transition-modal-title"
+            variant="h6"
+            component="h2">
+            <JSONTree
+              data={Object.assign({}, data, { children: 'function () {...}' })}
+              invertTheme
+            />
+          </Typography>
+        </Box>
+      </Fade>
+    </Modal>
+  )
 }
 
-// getDetails  will send a message to the server to get container details
-function getDetails(cntName) {
-  Send("inspect", "container.inspect", { "Name": cntName })
-}
+const boxStyle = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: '80%',
+  maxHeight: '80%',
+  color: 'white',
+  bgcolor: '#002b36',
+  border: '2px solid #000',
+  boxShadow: 24,
+  p: 4,
+  overflowX: 'auto',
+  overflowY: 'auto',
 
-// restartCont  will send a message to the server to restart a container
-function restartCont(cntName) {
-  Send("restart" + cntName, "container.restart", { "Name": cntName })
-}
-
-// startCont  will send a message to the server to start a container
-function startCont(cntName) {
-  Send("start" + cntName, "container.start", { "Name": cntName })
-}
-
-// stopCont  will send a message to the server to stop a container
-function stopCont(cntName) {
-  Send("stop" + cntName, "container.stop", { "Name": cntName })
-}
-
-// killCont  will send a message to the server to kill a container
-function killCont(cntName) {
-  Send("kill" + cntName, "container.kill", { "Name": cntName })
-}
+};
 
 //kill theme
 const killTheme = createTheme({
@@ -280,7 +319,6 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
   '& td, & th': {
     borderBottom: '1px solid #393d40',
-    // border: '1px solid #393d40',
     paddingLeft: 20,
   },
   '&:last-child td, &:last-child th': {
@@ -330,7 +368,7 @@ const StyledPopover = styled(Popover)(({ theme }) => ({
 }));
 
 //syled topography with rounded corners
-const StyledTypography = styled(Typography)(({ theme }) => ({
+const StyledPopoverTypography = styled(Typography)(({ theme }) => ({
   [`&.${typographyClasses.root}`]: {
     backgroundColor: '#FFA836',
   },

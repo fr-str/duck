@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { logSlice } from './logs'
-import { containerSlice } from './containers'
+import { containerSlice,inspect } from './containers'
 import { includeContainers } from './ws'
 
 export default configureStore({
@@ -12,5 +12,6 @@ export default configureStore({
     logs: logSlice.reducer,
     containers: containerSlice.reducer,
     includeContainers: includeContainers.reducer,
+    inspect: inspect.reducer,
   },
 })

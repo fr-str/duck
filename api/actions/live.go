@@ -4,9 +4,9 @@ import (
 	"bufio"
 	ws "docker-project/api/server"
 	"docker-project/docker"
-	"docker-project/er"
 	log "docker-project/logger"
 	"docker-project/structs"
+	"docker-project/wsc"
 	"encoding/json"
 	"io"
 	"sort"
@@ -25,7 +25,7 @@ func (a Live) HandleSub(r *ws.Request, w chan<- ws.Response) {
 			var c Containers
 			if err := json.Unmarshal(v, &c); err != nil {
 				log.Error(err)
-				w <- ws.Error(r, er.InternalServerError)
+				w <- ws.Error(r, wsc.InternalServerError)
 			}
 			go c.HandleLive(r, w)
 
@@ -33,13 +33,13 @@ func (a Live) HandleSub(r *ws.Request, w chan<- ws.Response) {
 			var l Logs
 			if err := json.Unmarshal(v, &l); err != nil {
 				log.Error(err)
-				w <- ws.Error(r, er.InternalServerError)
+				w <- ws.Error(r, wsc.InternalServerError)
 			}
 			go l.HandleLive(r, w)
 
 		default:
-			log.Error(er.Action.String() + er.NotFound.String())
-			w <- ws.Error(r, er.Action+er.NotFound)
+			log.Error(wsc.Action.String() + wsc.NotFound.String())
+			w <- ws.Error(r, wsc.Action+wsc.NotFound)
 		}
 	}
 }
@@ -69,20 +69,20 @@ func (a *Logs) HandleLive(r *ws.Request, w chan<- ws.Response) {
 	for _, cName := range a.ContainerNames {
 		_, ok := docker.ContainerMap.GetFull(cName)
 		if !ok {
-			w <- ws.Error(r, er.NotFound+er.Container)
+			w <- ws.Error(r, wsc.NotFound+wsc.Container)
 			continue
 		}
 
 		logs, _, err := docker.GetLogs(cName, a.Amount, a.Since, 0, false)
 		if err != nil {
 			if err == docker.ErrContNotExist {
-				log.Debug(er.Container.String() + er.NotFound.String())
-				w <- ws.Error(r, er.Container+er.NotFound)
+				log.Debug(wsc.Container.String() + wsc.NotFound.String())
+				w <- ws.Error(r, wsc.Container+wsc.NotFound)
 				continue
 			}
 
-			log.Error(er.InternalServerError.String())
-			w <- ws.Error(r, er.InternalServerError, "Reading "+cName+" logs")
+			log.Error(wsc.InternalServerError.String())
+			w <- ws.Error(r, wsc.InternalServerError, "Reading "+cName+" logs")
 			continue
 		}
 		allLogs = append(allLogs, logs...)
@@ -124,27 +124,27 @@ func (a *Logs) streamLogs(r *ws.Request, w chan<- ws.Response, containerName str
 
 		cont, ok := docker.ContainerMap.GetFull(containerName)
 		if !ok {
-			w <- ws.Error(r, er.NotFound+er.Container)
+			w <- ws.Error(r, wsc.NotFound+wsc.Container)
 			return
 		}
 
 		if cont.State == "exited" {
 			time.Sleep(1 * time.Second)
 			log.Debug(containerName, `cont.State == "exited" `)
-			w <- ws.Error(r, er.Error+er.Container+er.Exited, containerName)
+			w <- ws.Error(r, wsc.Error+wsc.Container+wsc.Exited, containerName)
 			return
 		}
 
 		_, rc, err = docker.GetLogs(containerName, 0, a.Since, 0, true)
 		if err != nil {
 			if err == docker.ErrContNotExist {
-				log.Debug(er.Container.String() + er.NotFound.String())
-				w <- ws.Error(r, er.Container+er.NotFound)
+				log.Debug(wsc.Container.String() + wsc.NotFound.String())
+				w <- ws.Error(r, wsc.Container+wsc.NotFound)
 				return
 			}
 
-			log.Error(er.InternalServerError.String())
-			w <- ws.Error(r, er.InternalServerError, "Reading "+containerName+" logs")
+			log.Error(wsc.InternalServerError.String())
+			w <- ws.Error(r, wsc.InternalServerError, "Reading "+containerName+" logs")
 			return
 		}
 

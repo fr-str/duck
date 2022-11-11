@@ -2,8 +2,8 @@ package ws
 
 import (
 	"context"
-	"docker-project/er"
 	log "docker-project/logger"
+	"docker-project/wsc"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -40,7 +40,7 @@ type Request struct {
 
 type Response struct {
 	RequestID string
-	Code      er.Type
+	Code      wsc.Type
 	Data      any
 }
 
@@ -120,7 +120,7 @@ func socketHandler(conn *websocket.Conn, service *string) {
 
 		// decode
 		r, code := decodeRequest(message)
-		if code != er.OK {
+		if code != wsc.OK {
 			conn.WriteJSON(Error(r, code))
 			continue
 		}
@@ -144,16 +144,16 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 	// Get action handler
 	handler, exists := handlers[prefix]
 	if !exists {
-		log.Debug(er.Action.String() + er.Missing.String())
-		w <- Error(r, er.Action+er.Missing)
+		log.Debug(wsc.Action.String() + wsc.Missing.String())
+		w <- Error(r, wsc.Action+wsc.Missing)
 		return
 	}
 
 	// Decode action data
 	action, err := handler.decode(r.Data)
 	if err != nil {
-		log.Error(er.Invalid.String() + er.ActionArgs.String())
-		w <- Error(r, er.Invalid+er.ActionArgs, prettyPrintActionFieldsForFrontend(reflect.New(handler.action)))
+		log.Error(wsc.Invalid.String() + wsc.ActionArgs.String())
+		w <- Error(r, wsc.Invalid+wsc.ActionArgs, prettyPrintActionFieldsForFrontend(reflect.New(handler.action)))
 		return
 	}
 
@@ -188,28 +188,28 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 		w <- res
 	case <-ctx.Done():
 		log.Debug("request timeout")
-		w <- Error(r, er.Timeout)
+		w <- Error(r, wsc.Timeout)
 	}
 }
 
-func decodeRequest(dataIn []byte) (r *Request, code er.Type) {
+func decodeRequest(dataIn []byte) (r *Request, code wsc.Type) {
 	r = &Request{
 		Data: dataIn,
 	}
 	err := json.Unmarshal(dataIn, r)
 	if err != nil {
 		log.Error(err)
-		return r, er.Error + er.Decode
+		return r, wsc.Error + wsc.Decode
 	}
 	if r.RequestID == "" {
-		log.Debug(er.Missing.String() + er.ReqID.String())
-		return r, er.Missing + er.ReqID
+		log.Debug(wsc.Missing.String() + wsc.ReqID.String())
+		return r, wsc.Missing + wsc.ReqID
 	}
 	if r.Action == "" {
-		log.Debug(er.Missing.String() + er.Action.String())
-		return r, er.Missing + er.Action
+		log.Debug(wsc.Missing.String() + wsc.Action.String())
+		return r, wsc.Missing + wsc.Action
 	}
-	return r, er.OK
+	return r, wsc.OK
 }
 
 // decode returns action interface
@@ -230,11 +230,11 @@ func (h *actionHandler) decode(data json.RawMessage) (act any, err error) {
 func panicHandler(r *Request, w chan<- Response) {
 	if err := recover(); err != nil {
 		log.Error(err)
-		w <- Error(r, er.InternalServerError)
+		w <- Error(r, wsc.InternalServerError)
 	}
 }
 
-func Error(r *Request, code er.Type, d ...any) Response {
+func Error(r *Request, code wsc.Type, d ...any) Response {
 	var data any
 	data = (code % 100).String() + (code - (code % 100)).String()
 	if len(d) > 0 {
@@ -247,7 +247,7 @@ func Error(r *Request, code er.Type, d ...any) Response {
 	}
 }
 
-func GoError(r *Request, code er.Type, fns ...func() error) {
+func GoError(r *Request, code wsc.Type, fns ...func() error) {
 	go func() {
 		for _, fn := range fns {
 			err := fn()
@@ -266,7 +266,15 @@ func GoError(r *Request, code er.Type, fns ...func() error) {
 func Ok(r *Request, data any) Response {
 	return Response{
 		RequestID: r.RequestID,
-		Code:      er.OK,
+		Code:      wsc.OK,
+		Data:      data,
+	}
+}
+
+func Custom(r *Request, code wsc.Type, data any) Response {
+	return Response{
+		RequestID: r.RequestID,
+		Code:      code,
 		Data:      data,
 	}
 }
@@ -274,7 +282,7 @@ func Ok(r *Request, data any) Response {
 func Live(requestID string, data any) Response {
 	return Response{
 		RequestID: requestID,
-		Code:      er.OK,
+		Code:      wsc.OK,
 		Data:      data,
 	}
 }

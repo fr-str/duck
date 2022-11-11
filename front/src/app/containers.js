@@ -17,4 +17,20 @@ export const containerSlice = createSlice({
 // Action creators are generated for each case reducer function
 export const { setContainer, remContainer } = containerSlice.actions
 
-export default containerSlice.reducer
+export const inspect = createSlice({
+    name: 'inspect',
+    initialState: {
+        value:null,
+    },
+    reducers: {
+        setInspect: (state, data) => {
+            state.value= data.payload
+        },
+        clearInspect: (state, data) => {
+            state.value= null
+        },
+    },
+})
+
+// Action creators are generated for each case reducer function
+export const { setInspect, clearInspect } = inspect.actions

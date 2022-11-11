@@ -1,6 +1,6 @@
 
 //import { useDispatch } from 'react-redux'
-import { remContainer, setContainer } from '../app/containers'
+import { remContainer, setContainer,setInspect } from '../app/containers'
 import { popLog, addLogs,clearLogs } from '../app/logs'
 import { remCont } from '../app/ws'
 import store from '../app/store'
@@ -38,8 +38,8 @@ export function Connect() {
                 store.dispatch(popLog())
             }
         }
-        if (data.Code === 200 && data.RequestID === 'inspect') {
-            console.log(data.Data)
+        if (data.Code === 208 && data.RequestID === 'inspect') {
+            store.dispatch(setInspect(data.Data))
         }
         if (data.Code === 311 && data.RequestID === 'live') {
             store.dispatch(remCont(data.Data))

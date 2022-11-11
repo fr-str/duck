@@ -1,4 +1,4 @@
-package er
+package wsc
 
 type Type uint16
 
@@ -25,4 +25,5 @@ const (
 	ContainerIsRunning
 	Decode
 	Exited
+	Inspect
 )
