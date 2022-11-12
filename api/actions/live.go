@@ -211,7 +211,7 @@ func readL(r *ws.Request, rc io.ReadCloser, w chan<- ws.Response, containerName 
 
 		w <- ws.Live("logs", []docker.Log{{
 			Timestamp: ti.UnixNano(),
-			Message:   msg,
+			Message:   docker.CutTimestamp(msg),
 			Container: containerName,
 		}})
 		canScanChan <- true

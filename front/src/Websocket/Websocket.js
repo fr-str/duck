@@ -61,7 +61,7 @@ export async function Live() {
     WS.send(JSON.stringify({
         "RequestID": "live",
         "Action": "live",
-        "Data": {
+        "Args": {
             "Containers": {},
             "Logs": {
                 "ContainerNames": store.getState("includeContainers").includeContainers.value,
@@ -82,6 +82,6 @@ export async function Send(rID, action, data) {
     WS.send(JSON.stringify({
         "RequestID": rID,
         "Action": action,
-        "Data": data
+        "Args": data
       }));
 }

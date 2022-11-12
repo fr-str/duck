@@ -62,7 +62,6 @@ var strToColor = (string, saturation = 100, lightness = 72) => {
 }
 
 
-// style scrollbars
 function styleC(height) {
     return {
         fontFamily: "monospace",

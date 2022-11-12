@@ -29,7 +29,7 @@ const Containers = (props) => {
   const containers = useSelector(state => state.containers.value)
   // eslint-disable-next-line
   const _ = useSelector(state => state.includeContainers.value)
-  // console.log(containers)
+
   return (
     <TableContainer component={StyledPaper}>
       <StyledTable padding='none' sx={{ minWidth: 700, maxHeight: props.style.height }} aria-label="customized table">
@@ -74,11 +74,6 @@ const Containers = (props) => {
 
 
                   <Inspect cont={cont[1]} />
-                  {/* <Button 
-                  style={buttonStyle} 
-                  variant="contained" 
-                  onClick={() => { getDetails(cont[0]) }}
-                  >Inspect</Button> */}
 
                   <PopoverButton
                     style={buttonStyle}
@@ -128,7 +123,7 @@ function PopoverButton(props) {
         theme={props.theme}
         aria-describedby={id}
         variant="contained"
-        // disabled={props.disabled}
+        disabled={props.disabled}
         onClick={handleClick}>
         {props.text}
       </Button>
@@ -167,7 +162,6 @@ function PopoverButton(props) {
 }
 
 function StartStopButton(props) {
-  //watch for changes in props
   const cont = props.cont
 
   if (cont.Status.includes("Up")) {
@@ -264,7 +258,6 @@ const boxStyle = {
 
 };
 
-//kill theme
 const killTheme = createTheme({
   palette: {
     primary: {
@@ -273,7 +266,6 @@ const killTheme = createTheme({
   },
 });
 
-//restart theme
 const restartTheme = createTheme({
   palette: {
     primary: {
@@ -282,7 +274,6 @@ const restartTheme = createTheme({
   },
 });
 
-//stop theme
 const stopTheme = createTheme({
   palette: {
     primary: {
@@ -291,7 +282,6 @@ const stopTheme = createTheme({
   },
 });
 
-//button style height 20px
 const buttonStyle = {
   height: 35,
   padding: 0,
@@ -327,7 +317,6 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
 }));
 
 
-//styled table
 const StyledTable = styled(Table)(({ theme }) => ({
   [`&.${tableClasses.root}`]: {
     marginLeft: theme.spacing(1),
@@ -351,7 +340,6 @@ const StyledTable = styled(Table)(({ theme }) => ({
   },
 }));
 
-//styled paper
 const StyledPaper = styled(Paper)(({ theme }) => ({
   [`&.${paperClasses.root}`]: {
     backgroundColor: '#17191a',
@@ -359,7 +347,6 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   },
 }));
 
-//styled popover
 const StyledPopover = styled(Popover)(({ theme }) => ({
   [`&.${popoverClasses.root}`]: {
     // backgroundColor: '#17191a',
@@ -367,7 +354,6 @@ const StyledPopover = styled(Popover)(({ theme }) => ({
   },
 }));
 
-//syled topography with rounded corners
 const StyledPopoverTypography = styled(Typography)(({ theme }) => ({
   [`&.${typographyClasses.root}`]: {
     backgroundColor: '#FFA836',

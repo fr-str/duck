@@ -28,7 +28,7 @@ type websocketSession struct {
 type Request struct {
 	RequestID string
 	Action    string
-	Data      json.RawMessage
+	Args      json.RawMessage
 	Timeout   uint // in seconds
 
 	ResultCh chan<- Response
@@ -150,10 +150,13 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 	}
 
 	// Decode action data
-	action, err := handler.decode(r.Data)
+	action, err := handler.decode(r.Args)
 	if err != nil {
 		log.Error(wsc.Invalid.String() + wsc.ActionArgs.String())
-		w <- Error(r, wsc.Invalid+wsc.ActionArgs, prettyPrintActionFieldsForFrontend(reflect.New(handler.action)))
+		w <- Error(r, wsc.Invalid+wsc.ActionArgs, map[string]interface{}{
+			"Error":      wsc.Invalid.String() + wsc.ActionArgs.String(),
+			"FieldTypes": prettyPrintActionFieldsForFrontend(reflect.New(handler.action)),
+		})
 		return
 	}
 
@@ -194,7 +197,7 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 
 func decodeRequest(dataIn []byte) (r *Request, code wsc.Type) {
 	r = &Request{
-		Data: dataIn,
+		Args: dataIn,
 	}
 	err := json.Unmarshal(dataIn, r)
 	if err != nil {

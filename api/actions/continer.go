@@ -41,8 +41,8 @@ func (a *Containers) Handle(r *ws.Request) ws.Response {
 		return a.Delete(r)
 
 	default:
-		log.Error(er.Action.String() + er.NotFound.String())
-		return ws.Error(r, er.Action+er.NotFound)
+		log.Error(wsc.Action.String() + wsc.NotFound.String())
+		return ws.Error(r, wsc.Action+wsc.NotFound)
 	}
 }
 

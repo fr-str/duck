@@ -8,6 +8,7 @@ import (
 	log "docker-project/logger"
 	"errors"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +24,8 @@ type Log struct {
 }
 
 var (
+	reg             = `\x1b\[[0-9]{1,2}(?:m|;[0-9];[0-9]{1,3}m)`
+	regex           = regexp.MustCompile(reg)
 	ErrContNotExist = errors.New("container does not exist")
 )
 
@@ -82,9 +85,11 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 	logs := []Log{}
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
-		line = string(sc.Bytes())
+		line = regex.ReplaceAllString(sc.Text(), "")
+		//docker timestamp
 		t := line[:30]
 		msg := line[30:]
+
 		if len(msg) != 0 {
 			msg = msg[1:]
 		}
@@ -95,7 +100,7 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 
 		logs = append(logs, Log{
 			Timestamp: ti.UnixNano(),
-			Message:   msg,
+			Message:   CutTimestamp(msg),
 			Container: contName,
 		})
 		i++
@@ -106,4 +111,21 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 
 	log.Debug("log num", i)
 	return logs, nil, nil
+}
+
+// it's simple, but it works... sometimes
+func CutTimestamp(line string) string {
+	var i int
+	for i = 0; i < len(line); i++ {
+		r := line[i]
+		switch {
+		case r >= '0' && r <= '9':
+			continue
+		case r == '-', r == 'T', r == ':', r == '.', r == 'Z', r == ' ', r == '+', r == '/': //, r == '[', r == ']':
+			continue
+		default:
+			return line[i:]
+		}
+	}
+	return line
 }

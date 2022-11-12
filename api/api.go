@@ -19,7 +19,7 @@ func Start(port string) error {
 	ws.RegisterAction[actions.Containers]("container")
 	ws.RegisterSubscription[actions.Live]("live")
 	ws.RegisterAction[actions.Logs]("logs")
-	time.Sleep(time.Second)
+	time.Sleep(500 * time.Millisecond)
 	r := mux.NewRouter()
 	r.HandleFunc("/api", ws.Handler)
 
