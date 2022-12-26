@@ -57,8 +57,15 @@ func (eh eventHandler) readEv(cli *client.Client) {
 }
 
 func handleContainer(cli *client.Client, ev events.Message) {
+	// fmt.Println(ev.Actor.Attributes["name"],"event: ", ev.Action)
+	// ignore exec events, untill i fix container info
+	// switch {
+	// case strings.HasPrefix(ev.Action, "exec_"):
+	// 	return
+	// }
+	updateChan <- struct{}{}
+
 	name := ev.Actor.Attributes["name"]
-	log.Debug(ev.Type, ev.Action, name)
 	cont, ok := ContainerMap.GetFull(name)
 	if !ok && ev.Action != "rename" {
 		return
@@ -72,7 +79,6 @@ func handleContainer(cli *client.Client, ev events.Message) {
 	if ev.Action == "rename" {
 		_, oldName, ok := strings.Cut(name, "_")
 		if !ok {
-			log.Error("REPORT THIS: Could not cut renamed event name {", name, "}")
 			return
 		}
 		cont, ok := ContainerMap.GetFull(oldName)
@@ -103,13 +109,14 @@ func handleContainer(cli *client.Client, ev events.Message) {
 		Type:   ev.Type,
 		Time:   ev.TimeNano,
 	}
-	switch ev.Action {
-	case "start", "kill":
 
+	switch ev.Action {
 	case "die":
 		contEvent.ExitCode = ev.Actor.Attributes["exitCode"]
+	default:
 	}
-	cont.Events.Add(contEvent)
+
+	// cont.Events.Add(contEvent)
 	ContainerMap.Broadcast(ty.WatchMsg[string, structs.Container]{
 		Event: ty.PutEvent,
 		Item: ty.Item[string, structs.Container]{

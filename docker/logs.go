@@ -85,7 +85,7 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 	logs := []Log{}
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
-		line = regex.ReplaceAllString(sc.Text(), "")
+		line = sc.Text()
 		//docker timestamp
 		t := line[:30]
 		msg := line[30:]
@@ -115,6 +115,7 @@ func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Lo
 
 // it's simple, but it works... sometimes
 func CutTimestamp(line string) string {
+	line = regex.ReplaceAllString(line, "")
 	var i int
 	for i = 0; i < len(line); i++ {
 		r := line[i]

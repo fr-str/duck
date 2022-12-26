@@ -12,9 +12,6 @@ import (
 )
 
 func Start(port string) error {
-	dcli.Init()
-	go docker.UpdateMap(dcli.Cli)
-	go docker.HandleEvents(dcli.Cli)
 
 	ws.RegisterAction[actions.Containers]("container")
 	ws.RegisterSubscription[actions.Live]("live")

@@ -36,3 +36,5 @@ require (
 	golang.org/x/tools v0.1.12 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
 )
+
+replace github.com/timoni-io/go-utils => ../go-utils

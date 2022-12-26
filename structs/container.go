@@ -6,7 +6,6 @@ import (
 	log "docker-project/logger"
 
 	"github.com/docker/docker/api/types"
-	"github.com/timoni-io/go-utils/slice"
 )
 
 type Container struct {
@@ -22,8 +21,8 @@ type Container struct {
 	Exited  int64
 	Mounts  []Mount
 	Ports   []Port
-	Events  *slice.Slice[Event]
-	Tty     bool
+	// Events  *slice.Slice[Event]
+	Tty bool
 }
 
 type Mount types.MountPoint

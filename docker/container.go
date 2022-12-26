@@ -8,17 +8,18 @@ import (
 	"encoding/json"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/timoni-io/go-utils/maps"
-	"github.com/timoni-io/go-utils/slice"
 )
 
-var ContainerMap = maps.New(make(map[string]structs.Container)).Safe().Eventfull(context.TODO(), 10)
-var DockerContainerMap = maps.New(make(map[string]types.ContainerJSON)).Safe()
+var (
+	ContainerMap       = maps.New(make(map[string]structs.Container)).Safe().Eventfull(context.TODO(), 10)
+	DockerContainerMap = maps.New(make(map[string]types.ContainerJSON)).Safe()
+	updateChan         = make(chan struct{}, 10)
+)
 
 type DockerContainer types.Container
 
@@ -34,10 +35,8 @@ func Patch(obj1, obj2 any) ([]byte, error) {
 	return jsonpatch.CreateMergePatch(objb1, objb2)
 }
 
-func SetContainer(dcont types.Container) {
-	cont := DockerContainer(dcont)
-	name := strings.TrimLeft(cont.Names[0], "/")
-	// var x structs.Container
+func SetContainer(cont DockerContainer) {
+	name := cont.getName()
 	cmap, ok := ContainerMap.GetFull(name)
 	cdoc := structs.Container{
 		ID:      cont.ID,
@@ -55,12 +54,13 @@ func SetContainer(dcont types.Container) {
 
 	if ok {
 		cdoc.Tty = cmap.Tty
-		cdoc.Events = cmap.Events
+		// cdoc.Events = cmap.Events
 
 		patch, err := Patch(cmap, cdoc)
 		if err != nil {
 			log.Error(err)
 		}
+
 		if len(patch) == 2 {
 			return
 		}
@@ -76,8 +76,8 @@ func SetContainer(dcont types.Container) {
 			}
 			log.Error(err)
 		}
-		DockerContainerMap.Set(strings.TrimLeft(cont.Names[0], "/"), t)
-		cdoc.Events = slice.NewSafeSlice[structs.Event](5)
+		DockerContainerMap.Set(cont.getName(), t)
+		// cdoc.Events = slice.NewSafeSlice[structs.Event](5)
 		cdoc.Tty = t.Config.Tty
 	}
 
@@ -95,23 +95,18 @@ func SetContainer(dcont types.Container) {
 	ContainerMap.Set(name, cdoc)
 }
 
-func UpdateMap(cli *client.Client /* , name string */) error {
-	tic := time.NewTicker(100 * time.Millisecond)
-	defer tic.Stop()
-	for range tic.C {
-		l, err := cli.ContainerList(context.TODO(), types.ContainerListOptions{
-			All: true,
-		})
-
+func UpdateMap(cli *client.Client) {
+	for range updateChan {
+		l, err := cli.ContainerList(context.TODO(), types.ContainerListOptions{All: true})
 		if err != nil {
 			log.Error(err)
 		}
 
 		for _, cont := range l {
-			SetContainer(cont)
+			SetContainer(DockerContainer(cont))
 		}
 	}
-	return nil
+
 }
 
 func (dcont DockerContainer) setIP() string {
@@ -133,6 +128,11 @@ func (dcont DockerContainer) setNet() string {
 
 	return netw
 }
+
+func (dcont DockerContainer) getName() string {
+	return strings.TrimLeft(dcont.Names[0], "/")
+}
+
 func (dcont DockerContainer) getMounts() (mounts []structs.Mount) {
 	for _, mount := range dcont.Mounts {
 		mounts = append(mounts, structs.Mount(mount))
