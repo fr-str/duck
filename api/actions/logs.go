@@ -18,8 +18,8 @@ type Logs struct {
 
 func (a *Logs) Handle(r *ws.Request) ws.Response {
 	if len(a.ContainerNames) == 0 {
-		log.Debug(wsc.Missing.String() + wsc.ContainerName.String())
-		return ws.Error(r, wsc.Missing+wsc.ContainerName)
+		log.Debug(wsc.Missing.String() + wsc.Container.String() + wsc.Name.String())
+		return ws.Error(r, nil, wsc.Missing, wsc.Container, wsc.Name)
 	}
 	act := strings.TrimPrefix(r.Action, "logs.")
 	switch act {
@@ -27,7 +27,7 @@ func (a *Logs) Handle(r *ws.Request) ws.Response {
 		return a.Before(r)
 	default:
 		log.Debug(wsc.Action.String() + wsc.NotFound.String())
-		return ws.Error(r, wsc.Action+wsc.NotFound)
+		return ws.Error(r, nil, wsc.Action, wsc.NotFound)
 	}
 }
 
@@ -38,10 +38,10 @@ func (a *Logs) Before(r *ws.Request) ws.Response {
 		if err != nil {
 			if err == docker.ErrContNotExist {
 				log.Debug(wsc.Container.String() + wsc.NotFound.String())
-				return ws.Error(r, wsc.Container+wsc.NotFound)
+				return ws.Error(r, wsc.Container, wsc.NotFound)
 			}
 			log.Error(wsc.InternalServerError.String())
-			return ws.Error(r, wsc.InternalServerError)
+			return ws.Error(r, nil, wsc.InternalServerError)
 		}
 		logs = append(logs, lgs...)
 	}

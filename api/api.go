@@ -16,9 +16,11 @@ func Start(port string) error {
 	ws.RegisterAction[actions.Containers]("container")
 	ws.RegisterSubscription[actions.Live]("live")
 	ws.RegisterAction[actions.Logs]("logs")
-	time.Sleep(500 * time.Millisecond)
+	ws.RegisterAction[actions.Image]("image")
 	r := mux.NewRouter()
 	r.HandleFunc("/api", ws.Handler)
+
+	time.Sleep(500 * time.Millisecond)
 
 	// r.PathPrefix("/").Handler(http.FileServer(http.Dir("./front/build")))
 	log.Info("Listening on", port)

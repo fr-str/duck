@@ -42,25 +42,25 @@ func (a *Containers) Handle(r *ws.Request) ws.Response {
 
 	default:
 		log.Error(wsc.Action.String() + wsc.NotFound.String())
-		return ws.Error(r, wsc.Action+wsc.NotFound)
+		return ws.Error(r, nil, wsc.Action, wsc.NotFound)
 	}
 }
 
 func (a *Containers) SSRK(r *ws.Request) ws.Response {
 	cont, ok := docker.ContainerMap.GetFull(a.Name)
 	if !ok {
-		return ws.Error(r, wsc.NotFound+wsc.Container)
+		return ws.Error(r, nil, wsc.NotFound, wsc.Container)
 	}
 
 	switch strings.TrimPrefix(r.Action, "container.") {
 	case "start":
-		ws.GoError(r, wsc.InternalServerError, cont.Start)
+		ws.GoError(r, wsc.Codes{wsc.InternalServerError}, cont.Start)
 	case "stop":
-		ws.GoError(r, wsc.InternalServerError, cont.Stop)
+		ws.GoError(r, wsc.Codes{wsc.InternalServerError}, cont.Stop)
 	case "restart":
-		ws.GoError(r, wsc.InternalServerError, cont.Restart)
+		ws.GoError(r, wsc.Codes{wsc.InternalServerError}, cont.Restart)
 	case "kill":
-		ws.GoError(r, wsc.InternalServerError, cont.Kill)
+		ws.GoError(r, wsc.Codes{wsc.InternalServerError}, cont.Kill)
 	}
 
 	return ws.Ok(r, "ok")
@@ -77,7 +77,7 @@ func (a *Containers) List(r *ws.Request) ws.Response {
 func (a *Containers) Create(r *ws.Request) ws.Response {
 	_, ok := docker.ContainerMap.GetFull(a.Name)
 	if ok {
-		return ws.Error(r, wsc.Exists+wsc.Container)
+		return ws.Error(r, nil, wsc.Exists, wsc.Container)
 	}
 	//TODO
 
@@ -88,9 +88,9 @@ func (a *Containers) Inspect(r *ws.Request) ws.Response {
 	log.Debug("Inspect", a.Name)
 	cont, ok := docker.DockerContainerMap.GetFull(a.Name)
 	if !ok {
-		return ws.Error(r, wsc.NotFound+wsc.Container)
+		return ws.Error(r, nil, wsc.NotFound, wsc.Container)
 	}
-	return ws.Custom(r, wsc.OK+wsc.Inspect, cont)
+	return ws.Ok(r, cont)
 }
 
 func (a *Containers) ApplyDockerCompose(r *ws.Request) ws.Response {
@@ -106,7 +106,7 @@ func (a *Containers) ApplyDockerCompose(r *ws.Request) ws.Response {
 		args = append(args, "--build")
 	}
 
-	ws.GoError(r, wsc.InternalServerError, func() error {
+	ws.GoError(r, wsc.Codes{wsc.InternalServerError}, func() error {
 		log.Info("docker-compose", args)
 		log.Info(pr)
 		return cmd.NewCommand("docker-compose", args...).Run(&cmd.RunOptions{
@@ -143,17 +143,17 @@ func readLogs(r *ws.Request, rc io.ReadCloser) {
 func (a *Containers) Delete(r *ws.Request) ws.Response {
 	cont, ok := docker.ContainerMap.GetFull(a.Name)
 	if !ok {
-		return ws.Error(r, wsc.NotFound+wsc.Container)
+		return ws.Error(r, nil, wsc.NotFound, wsc.Container)
 	}
 
 	if !a.Force && !a.SoftForce && cont.State != "exited" {
-		return ws.Error(r, wsc.Forbbiden+wsc.ContainerIsRunning)
+		return ws.Error(r, nil, wsc.Forbbiden, wsc.ContainerIsRunning)
 	}
 
 	if a.SoftForce {
-		ws.GoError(r, wsc.InternalServerError, cont.Stop, cont.Delete)
+		ws.GoError(r, wsc.Codes{wsc.InternalServerError}, cont.Stop, cont.Delete)
 	} else {
-		ws.GoError(r, wsc.InternalServerError, cont.Kill, cont.Delete)
+		ws.GoError(r, wsc.Codes{wsc.InternalServerError}, cont.Kill, cont.Delete)
 	}
 
 	return ws.Ok(r, "ok")

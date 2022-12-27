@@ -40,7 +40,7 @@ type Request struct {
 
 type Response struct {
 	RequestID string
-	Code      wsc.Type
+	Code      uint16
 	Data      any
 }
 
@@ -120,7 +120,7 @@ func socketHandler(conn *websocket.Conn, service *string) {
 
 		// decode
 		r, code := decodeRequest(message)
-		if code != wsc.OK {
+		if len(code) != 1 {
 			conn.WriteJSON(Error(r, code))
 			continue
 		}
@@ -145,7 +145,7 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 	handler, exists := handlers[prefix]
 	if !exists {
 		log.Debug(wsc.Action.String() + wsc.Missing.String())
-		w <- Error(r, wsc.Action+wsc.Missing)
+		w <- Error(r, nil, wsc.Action, wsc.Missing)
 		return
 	}
 
@@ -153,10 +153,10 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 	action, err := handler.decode(r.Args)
 	if err != nil {
 		log.Error(wsc.Invalid.String() + wsc.ActionArgs.String())
-		w <- Error(r, wsc.Invalid+wsc.ActionArgs, map[string]interface{}{
+		w <- Error(r, map[string]interface{}{
 			"Error":      wsc.Invalid.String() + wsc.ActionArgs.String(),
 			"FieldTypes": prettyPrintActionFieldsForFrontend(reflect.New(handler.action)),
-		})
+		}, wsc.Invalid, wsc.ActionArgs)
 		return
 	}
 
@@ -195,24 +195,24 @@ func requestHandler(ctx context.Context, r *Request, w chan<- Response, sess *we
 	}
 }
 
-func decodeRequest(dataIn []byte) (r *Request, code wsc.Type) {
+func decodeRequest(dataIn []byte) (r *Request, code wsc.Codes) {
 	r = &Request{
 		Args: dataIn,
 	}
 	err := json.Unmarshal(dataIn, r)
 	if err != nil {
 		log.Error(err)
-		return r, wsc.Error + wsc.Decode
+		return r, wsc.Wrap(wsc.Error, wsc.Decode)
 	}
 	if r.RequestID == "" {
 		log.Debug(wsc.Missing.String() + wsc.ReqID.String())
-		return r, wsc.Missing + wsc.ReqID
+		return r, wsc.Wrap(wsc.Missing, wsc.ReqID)
 	}
 	if r.Action == "" {
 		log.Debug(wsc.Missing.String() + wsc.Action.String())
-		return r, wsc.Missing + wsc.Action
+		return r, wsc.Wrap(wsc.Missing, wsc.Action)
 	}
-	return r, wsc.OK
+	return r, wsc.Wrap(wsc.OK)
 }
 
 // decode returns action interface
@@ -237,29 +237,27 @@ func panicHandler(r *Request, w chan<- Response) {
 	}
 }
 
-func Error(r *Request, code wsc.Type, d ...any) Response {
-	var data any
-	data = (code % 100).String() + (code - (code % 100)).String()
-	if len(d) > 0 {
-		data = d[0]
+func Error(r *Request, data any, code ...wsc.Code) Response {
+	if data == nil {
+		data = wsc.Codes(code).ToString()
 	}
+
 	return Response{
 		RequestID: r.RequestID,
-		Code:      code,
+		Code:      wsc.Codes(code).Sum(),
 		Data:      data,
 	}
 }
 
-func GoError(r *Request, code wsc.Type, fns ...func() error) {
+func GoError(r *Request, code wsc.Codes, fns ...func() error) {
 	go func() {
 		for _, fn := range fns {
 			err := fn()
 			if err != nil {
-				data := (code % 100).String() + (code ^ (code % 100)).String()
 				r.ResultCh <- Response{
 					RequestID: r.RequestID,
-					Code:      code,
-					Data:      fmt.Sprintf("%s: %s", data, err),
+					Code:      code.Sum(),
+					Data:      fmt.Sprintf("%s: %s", code, err),
 				}
 			}
 		}
@@ -269,15 +267,7 @@ func GoError(r *Request, code wsc.Type, fns ...func() error) {
 func Ok(r *Request, data any) Response {
 	return Response{
 		RequestID: r.RequestID,
-		Code:      wsc.OK,
-		Data:      data,
-	}
-}
-
-func Custom(r *Request, code wsc.Type, data any) Response {
-	return Response{
-		RequestID: r.RequestID,
-		Code:      code,
+		Code:      wsc.OK.Get(),
 		Data:      data,
 	}
 }
@@ -285,7 +275,7 @@ func Custom(r *Request, code wsc.Type, data any) Response {
 func Live(requestID string, data any) Response {
 	return Response{
 		RequestID: requestID,
-		Code:      wsc.OK,
+		Code:      wsc.OK.Get(),
 		Data:      data,
 	}
 }

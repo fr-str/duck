@@ -39,7 +39,7 @@ func (a Live) HandleSub(r *ws.Request, w chan<- ws.Response) {
 
 		default:
 			log.Error(wsc.Action.String() + wsc.NotFound.String())
-			w <- ws.Error(r, wsc.Action+wsc.NotFound)
+			w <- ws.Error(r, nil, wsc.Action, wsc.NotFound)
 		}
 	}
 }
@@ -69,7 +69,7 @@ func (a *Logs) HandleLive(r *ws.Request, w chan<- ws.Response) {
 	for _, cName := range a.ContainerNames {
 		_, ok := docker.ContainerMap.GetFull(cName)
 		if !ok {
-			w <- ws.Error(r, wsc.NotFound+wsc.Container)
+			w <- ws.Error(r, nil, wsc.NotFound, wsc.Container)
 			continue
 		}
 
@@ -77,12 +77,12 @@ func (a *Logs) HandleLive(r *ws.Request, w chan<- ws.Response) {
 		if err != nil {
 			if err == docker.ErrContNotExist {
 				log.Debug(wsc.Container.String() + wsc.NotFound.String())
-				w <- ws.Error(r, wsc.Container+wsc.NotFound)
+				w <- ws.Error(r, nil, wsc.Container, wsc.NotFound)
 				continue
 			}
 
 			log.Error(wsc.InternalServerError.String())
-			w <- ws.Error(r, wsc.InternalServerError, "Reading "+cName+" logs")
+			w <- ws.Error(r, "Reading "+cName+" logs", wsc.InternalServerError)
 			continue
 		}
 		allLogs = append(allLogs, logs...)
@@ -124,14 +124,14 @@ func (a *Logs) streamLogs(r *ws.Request, w chan<- ws.Response, containerName str
 
 		cont, ok := docker.ContainerMap.GetFull(containerName)
 		if !ok {
-			w <- ws.Error(r, wsc.NotFound+wsc.Container)
+			w <- ws.Error(r, nil, wsc.NotFound, wsc.Container)
 			return
 		}
 
 		if cont.State == "exited" {
 			time.Sleep(1 * time.Second)
 			log.Debug(containerName, `cont.State == "exited" `)
-			w <- ws.Error(r, wsc.Error+wsc.Container+wsc.Exited, containerName)
+			w <- ws.Error(r, containerName, wsc.Error, wsc.Container, wsc.Exited)
 			return
 		}
 
@@ -139,12 +139,12 @@ func (a *Logs) streamLogs(r *ws.Request, w chan<- ws.Response, containerName str
 		if err != nil {
 			if err == docker.ErrContNotExist {
 				log.Debug(wsc.Container.String() + wsc.NotFound.String())
-				w <- ws.Error(r, wsc.Container+wsc.NotFound)
+				w <- ws.Error(r, nil, wsc.Container, wsc.NotFound)
 				return
 			}
 
 			log.Error(wsc.InternalServerError.String())
-			w <- ws.Error(r, wsc.InternalServerError, "Reading "+containerName+" logs")
+			w <- ws.Error(r, "Reading "+containerName+" logs", wsc.InternalServerError)
 			return
 		}
 

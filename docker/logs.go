@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/moby/moby/pkg/stdcopy"
+	"github.com/docker/docker/pkg/stdcopy"
 )
 
 type Log struct {
