@@ -18,6 +18,8 @@ import (
 
 type Live map[string]json.RawMessage
 
+type Metrics struct{}
+
 func (a Live) HandleSub(r *ws.Request, w chan<- ws.Response) {
 	for k, v := range a {
 		switch strings.ToLower(k) {
@@ -36,7 +38,13 @@ func (a Live) HandleSub(r *ws.Request, w chan<- ws.Response) {
 				w <- ws.Error(r, wsc.InternalServerError)
 			}
 			go l.HandleLive(r, w)
-
+		case "metrics":
+			var m Metrics
+			if err := json.Unmarshal(v, &m); err != nil {
+				log.Error(err)
+				w <- ws.Error(r, wsc.InternalServerError)
+			}
+			go m.HandleLive(r, w)
 		default:
 			log.Error(wsc.Action.String() + wsc.NotFound.String())
 			w <- ws.Error(r, nil, wsc.Action, wsc.NotFound)
@@ -45,14 +53,14 @@ func (a Live) HandleSub(r *ws.Request, w chan<- ws.Response) {
 }
 
 func (a *Containers) HandleLive(r *ws.Request, w chan<- ws.Response) {
-	for el := range docker.ContainerMap.Iter() {
-		w <- ws.Live("containers", types.WatchMsg[string, structs.Container]{
+	for el := range docker.Containers.Iter() {
+		w <- ws.Live("containers", types.WatchMsg[string, *structs.Container]{
 			Event: types.PutEvent,
 			Item:  el,
 		})
 	}
 
-	contEvents := docker.ContainerMap.Register(r.Ctx)
+	contEvents := docker.Containers.Register(r.Ctx)
 	for v := range contEvents {
 		select {
 		case <-r.Ctx.Done():
@@ -65,9 +73,10 @@ func (a *Containers) HandleLive(r *ws.Request, w chan<- ws.Response) {
 // What a mess lol
 func (a *Logs) HandleLive(r *ws.Request, w chan<- ws.Response) {
 	log.Debug("streaming logs for", a.ContainerNames)
+
 	allLogs := make([]docker.Log, 0)
 	for _, cName := range a.ContainerNames {
-		_, ok := docker.ContainerMap.GetFull(cName)
+		_, ok := docker.Containers.GetFull(cName)
 		if !ok {
 			w <- ws.Error(r, nil, wsc.NotFound, wsc.Container)
 			continue
@@ -100,13 +109,13 @@ func (a *Logs) HandleLive(r *ws.Request, w chan<- ws.Response) {
 }
 
 func (a *Logs) streamLogs(r *ws.Request, w chan<- ws.Response, containerName string) {
-	if !docker.ContainerMap.Exists(containerName) {
+	if !docker.Containers.Exists(containerName) {
 		return
 	}
 	// FIXME: this is a mess
 
 	var strip bool
-	if !docker.ContainerMap.Get(containerName).Tty {
+	if !docker.Containers.Get(containerName).Tty {
 		strip = true
 	}
 
@@ -122,7 +131,7 @@ func (a *Logs) streamLogs(r *ws.Request, w chan<- ws.Response, containerName str
 		default:
 		}
 
-		cont, ok := docker.ContainerMap.GetFull(containerName)
+		cont, ok := docker.Containers.GetFull(containerName)
 		if !ok {
 			w <- ws.Error(r, nil, wsc.NotFound, wsc.Container)
 			return
@@ -159,34 +168,13 @@ func readL(r *ws.Request, rc io.ReadCloser, w chan<- ws.Response, containerName 
 
 	var line string
 	var bline []byte
-	scanChan := make(chan bool)
-	canScanChan := make(chan bool)
 	sc := bufio.NewScanner(rc)
 	go func() {
-		for {
-			select {
-			case <-r.Ctx.Done():
-				close(scanChan)
-				return
-			case scanChan <- sc.Scan():
-				if !<-canScanChan { // wait for the scan to be done
-					return
-				}
-			}
-		}
+		<-r.Ctx.Done()
+		rc.Close()
 	}()
 
-	for {
-		select {
-		case <-r.Ctx.Done():
-			rc.Close()
-			return
-		case b := <-scanChan:
-			if !b {
-				canScanChan <- false
-				return
-			}
-		}
+	for sc.Scan() {
 
 		bline = sc.Bytes()
 		if len(bline) < 8 {
@@ -214,6 +202,20 @@ func readL(r *ws.Request, rc io.ReadCloser, w chan<- ws.Response, containerName 
 			Message:   docker.CutTimestamp(msg),
 			Container: containerName,
 		}})
-		canScanChan <- true
 	}
+}
+
+func (a *Metrics) HandleLive(r *ws.Request, w chan<- ws.Response) {
+	tic := time.NewTicker(time.Second)
+	for range tic.C {
+		select {
+		case <-r.Ctx.Done():
+			tic.Stop()
+			return
+		default:
+		}
+
+		w <- ws.Live("Metrics", docker.Containers.Values())
+	}
+
 }

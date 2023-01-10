@@ -22,6 +22,7 @@ import Fade from '@mui/material/Fade';
 import Backdrop from '@mui/material/Backdrop';
 import Box from '@mui/material/Box';
 import {JSONTree} from 'react-json-tree'
+import { lineHeight } from '@mui/system';
 
 
 const Containers = (props) => {
@@ -29,6 +30,14 @@ const Containers = (props) => {
   const containers = useSelector(state => state.containers.value)
   // eslint-disable-next-line
   const _ = useSelector(state => state.includeContainers.value)
+  let totalMem = 0
+  let totalCPU = 0
+
+  // calculate total CPU and MEM
+  Array.from(containers).map((cont) => {
+    totalMem += cont[1].Stats.Memory.Usage
+    totalCPU += cont[1].Stats.CPUUsage
+  })
 
   return (
     <TableContainer component={StyledPaper}>
@@ -39,7 +48,14 @@ const Containers = (props) => {
             <StyledTableCell sx={{p:2}} align="left">Status</StyledTableCell>
             <StyledTableCell sx={{p:2}} align="left">Image</StyledTableCell>
             <StyledTableCell sx={{p:2}} align="left">Crated</StyledTableCell>
-            <StyledTableCell sx={{p:2}} align="left">Metrics</StyledTableCell>
+            <StyledTableCell sx={{p:2}} align="center" style={{ padding:0 }}>
+              Metrics
+              <div style={{ color: "grey", fontSize: 12,lineHeight:1 }}>
+                CPU: {totalCPU.toFixed(2)}%
+                <br />
+                MEM: {MiBOrGiB(totalMem)}
+              </div>
+              </StyledTableCell>
             <StyledTableCell sx={{p:2}} align="center">Actions</StyledTableCell>
           </TableRow>
         </TableHead>
@@ -54,16 +70,29 @@ const Containers = (props) => {
               onClick = () => { store.dispatch(remCont(cont[1].Name)); Live() }
               name = "Tailing..."
             }
-
+            totalMem += cont[1].Stats.Memory.Usage
+            totalCPU += cont[1].Stats.CPUUsage
+            
             return (
               <StyledTableRow sx={{ p: 1 }} key={cont[1].Name}>
                 <StyledTableCell component="th" scope="cont">
                   {cont[1].Name}
                 </StyledTableCell>
-                <StyledTableCell component="th" scope="cont">{cont[1].Status}</StyledTableCell>
+                <StyledTableCell component="th" scope="cont">
+                    {
+                      cont[1].Exited !==0 ? <div style={{ color: "grey"}}>Exited {moment.unix(cont[1].Exited).fromNow()}</div> :
+                       <div style={{ color: "green"}}>Up {moment.unix(cont[1].Started).fromNow().slice(0,-4)}</div>
+                    }
+                </StyledTableCell>
                 <StyledTableCell component="th" scope="cont">{cont[1].Image}</StyledTableCell>
                 <StyledTableCell component="th" scope="cont">{moment.unix(cont[1].Created).fromNow()}</StyledTableCell>
-                <StyledTableCell component="th" scope="cont">Nie ma</StyledTableCell>
+                {cont[1].Stats.Memory.Usage > 0 ? <StyledTableCell component="th" scope="cont">
+                  <div style={{ color: "grey", fontSize: 12,lineHeight:1 }}>
+                  CPU: {cont[1].Stats.CPUUsage}%
+                  <br />
+                  MEM: {MiBOrGiB(cont[1].Stats.Memory.Usage)}
+                  </div> 
+                </StyledTableCell>: <StyledTableCell component="th" scope="cont" style={{color: "grey", fontSize: 12,lineHeight:1}}>disabled</StyledTableCell>}
                 <StyledTableCell component="th" scope="cont" align="right" style={{ paddingRight: 15 }}>
 
                   <Button
@@ -97,10 +126,18 @@ const Containers = (props) => {
               </StyledTableRow>
             )
           })}
+           
         </TableBody>
       </StyledTable>
     </TableContainer>
   );
+}
+
+function MiBOrGiB(mem) {
+  if (mem > 1000) {
+    return (mem / 1000).toFixed(2) + " GiB"
+  }
+  return mem.toFixed(2) + " MiB"
 }
 
 function PopoverButton(props) {

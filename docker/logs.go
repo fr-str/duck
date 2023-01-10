@@ -30,7 +30,7 @@ var (
 )
 
 func GetLogs(contName string, amount int, since, until int64, follow bool) ([]Log, io.ReadCloser, error) {
-	cont, ok := ContainerMap.GetFull(contName)
+	cont, ok := Containers.GetFull(contName)
 	if !ok {
 		return nil, nil, ErrContNotExist
 	}

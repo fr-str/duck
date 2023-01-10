@@ -9,6 +9,11 @@ import (
 )
 
 type Container struct {
+	Ctx     context.Context    `json:"-"`
+	Cancel  context.CancelFunc `json:"-"`
+	Stats   *MiniStats
+	Mounts  []Mount
+	Ports   []Port
 	ID      string
 	Name    string
 	Image   string
@@ -18,11 +23,9 @@ type Container struct {
 	IP      string
 	CMD     string
 	Created int64
+	Started int64
 	Exited  int64
-	Mounts  []Mount
-	Ports   []Port
-	// Events  *slice.Slice[Event]
-	Tty bool
+	Tty     bool
 }
 
 type Mount types.MountPoint

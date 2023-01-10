@@ -47,7 +47,7 @@ func (a *Containers) Handle(r *ws.Request) ws.Response {
 }
 
 func (a *Containers) SSRK(r *ws.Request) ws.Response {
-	cont, ok := docker.ContainerMap.GetFull(a.Name)
+	cont, ok := docker.Containers.GetFull(a.Name)
 	if !ok {
 		return ws.Error(r, nil, wsc.NotFound, wsc.Container)
 	}
@@ -68,14 +68,14 @@ func (a *Containers) SSRK(r *ws.Request) ws.Response {
 
 func (a *Containers) List(r *ws.Request) ws.Response {
 	m := map[string]structs.Container{}
-	for v := range docker.ContainerMap.Iter() {
-		m[v.Key] = v.Value
+	for v := range docker.Containers.Iter() {
+		m[v.Key] = *v.Value
 	}
 	return ws.Ok(r, m)
 }
 
 func (a *Containers) Create(r *ws.Request) ws.Response {
-	_, ok := docker.ContainerMap.GetFull(a.Name)
+	_, ok := docker.Containers.GetFull(a.Name)
 	if ok {
 		return ws.Error(r, nil, wsc.Exists, wsc.Container)
 	}
@@ -141,7 +141,7 @@ func readLogs(r *ws.Request, rc io.ReadCloser) {
 }
 
 func (a *Containers) Delete(r *ws.Request) ws.Response {
-	cont, ok := docker.ContainerMap.GetFull(a.Name)
+	cont, ok := docker.Containers.GetFull(a.Name)
 	if !ok {
 		return ws.Error(r, nil, wsc.NotFound, wsc.Container)
 	}

@@ -57,21 +57,16 @@ func (eh eventHandler) readEv(cli *client.Client) {
 }
 
 func handleContainer(cli *client.Client, ev events.Message) {
-	// fmt.Println(ev.Actor.Attributes["name"],"event: ", ev.Action)
-	// ignore exec events, untill i fix container info
-	// switch {
-	// case strings.HasPrefix(ev.Action, "exec_"):
-	// 	return
-	// }
 	updateChan <- struct{}{}
 
 	name := ev.Actor.Attributes["name"]
-	cont, ok := ContainerMap.GetFull(name)
+	cont, ok := Containers.GetFull(name)
 	if !ok && ev.Action != "rename" {
 		return
 	}
 	if ev.Action == "destroy" {
-		ContainerMap.Delete(name)
+		cont.Cancel()
+		Containers.Delete(name)
 		DockerContainerMap.Delete(name)
 		return
 	}
@@ -81,14 +76,14 @@ func handleContainer(cli *client.Client, ev events.Message) {
 		if !ok {
 			return
 		}
-		cont, ok := ContainerMap.GetFull(oldName)
+		cont, ok := Containers.GetFull(oldName)
 		if !ok {
 			return
 		}
 
-		ContainerMap.Delete(oldName)
+		Containers.Delete(oldName)
 		DockerContainerMap.Delete(oldName)
-		ContainerMap.Set(name, cont)
+		Containers.Set(name, cont)
 		go func() {
 			t, err := dcli.Cli.ContainerInspect(context.TODO(), cont.ID)
 			if err != nil {
@@ -98,7 +93,7 @@ func handleContainer(cli *client.Client, ev events.Message) {
 				log.Error(err)
 			}
 			log.Debug("Set container", t.Name)
-			DockerContainerMap.Set(strings.TrimLeft(t.Name, "/"), t)
+			DockerContainerMap.Set(strings.TrimLeft(t.Name, "/"), &t)
 		}()
 		return
 	}
@@ -116,10 +111,9 @@ func handleContainer(cli *client.Client, ev events.Message) {
 	default:
 	}
 
-	// cont.Events.Add(contEvent)
-	ContainerMap.Broadcast(ty.WatchMsg[string, structs.Container]{
+	Containers.Broadcast(ty.WatchMsg[string, *structs.Container]{
 		Event: ty.PutEvent,
-		Item: ty.Item[string, structs.Container]{
+		Item: ty.Item[string, *structs.Container]{
 			Key:   cont.Name,
 			Value: cont,
 		},

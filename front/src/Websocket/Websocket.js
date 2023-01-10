@@ -30,6 +30,12 @@ export function Connect() {
             }
         }
 
+        if (data.RequestID === "Metrics"){
+            data.Data.forEach(element => {
+                store.dispatch(setContainer({ key: element.Name, value: element }))
+            });
+        }
+
         // append logs to logs state, max 5000 logs
         if (data.Code === 200 && data.RequestID === 'logs') {
             // console.log(data.Data)
@@ -63,6 +69,7 @@ export async function Live() {
         "Action": "live",
         "Args": {
             "Containers": {},
+            "Metrics": {},
             "Logs": {
                 "ContainerNames": store.getState("includeContainers").includeContainers.value,
                 "Amount": 100

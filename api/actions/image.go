@@ -18,8 +18,8 @@ func (a *Image) Handle(r *ws.Request) ws.Response {
 	switch act {
 	case "new":
 		return a.New(r)
-	case "pull":
-		return a.Pull(r)
+	// case "pull":
+	// return a.Pull(r)
 	case "list":
 		return a.List(r)
 	case "delete":
