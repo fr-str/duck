@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/timoni-io/go-utils/cmd"
-	"github.com/timoni-io/go-utils/types"
 )
 
 type Containers struct {

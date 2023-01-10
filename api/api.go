@@ -3,11 +3,10 @@ package api
 import (
 	"docker-project/api/actions"
 	ws "docker-project/api/server"
-	"docker-project/docker"
-	dcli "docker-project/docker/client"
 	log "docker-project/logger"
 	"net/http"
 	"time"
+
 	"github.com/gorilla/mux"
 )
 
