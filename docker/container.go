@@ -75,7 +75,16 @@ func SetContainer(cont DockerContainer) {
 			return
 		}
 
-	} else {
+	}
+
+	if cdoc.Stats == nil {
+		cdoc.Stats = &structs.MiniStats{}
+	}
+	if cdoc.Ctx == nil {
+		cdoc.Ctx, cdoc.Cancel = context.WithCancel(context.Background())
+	}
+
+	go func() {
 		t, err := dcli.Cli.ContainerInspect(context.TODO(), cont.ID)
 		if err != nil {
 			if strings.Contains(err.Error(), "No such container") {
@@ -83,16 +92,15 @@ func SetContainer(cont DockerContainer) {
 			}
 			log.Error(err)
 		}
+
 		DockerContainerMap.Set(cont.getName(), &t)
 		cdoc.Tty = t.Config.Tty
-		cdoc.Ctx, cdoc.Cancel = context.WithCancel(context.Background())
-		cdoc.Stats = &structs.MiniStats{}
 		cdoc.Started = utils.Must(time.Parse(time.RFC3339Nano, t.State.StartedAt)).Unix()
 		cdoc.Exited = utils.Must(time.Parse(time.RFC3339Nano, t.State.FinishedAt)).Unix()
 		if t.State.Running {
 			cdoc.Exited = 0
 		}
-	}
+	}()
 
 	Containers.Set(name, &cdoc)
 	if !cdoc.Stats.Monitored {

@@ -1,7 +1,7 @@
 
 //import { useDispatch } from 'react-redux'
-import { remContainer, setContainer,setInspect } from '../app/containers'
-import { popLog, addLogs,clearLogs } from '../app/logs'
+import { remContainer, setContainer, setInspect } from '../app/containers'
+import { popLog, addLogs, clearLogs } from '../app/logs'
 import { remCont } from '../app/ws'
 import store from '../app/store'
 export var WS = null;
@@ -14,6 +14,7 @@ export function Connect() {
         Live();
 
     };
+
     WS.onmessage = (msg) => {
         const data = JSON.parse(msg.data)
         // update containers map state
@@ -22,6 +23,13 @@ export function Connect() {
             const { Event, Key, Value } = data.Data
             // console.log(Event,Key,Value)
             if (Event === 'PUT') {
+                if (store.getState().containers.value.has(Key)) {
+                    let s = store.getState().containers.value.get(Key).State
+                    if (Value.State === 'running' && s !== 'running') {
+                        Live()
+                    }
+                }
+
                 store.dispatch(setContainer({ key: Key, value: Value }))
             }
 
@@ -30,7 +38,7 @@ export function Connect() {
             }
         }
 
-        if (data.RequestID === "Metrics"){
+        if (data.RequestID === "Metrics") {
             data.Data.forEach(element => {
                 store.dispatch(setContainer({ key: element.Name, value: element }))
             });
@@ -90,5 +98,5 @@ export async function Send(rID, action, data) {
         "RequestID": rID,
         "Action": action,
         "Args": data
-      }));
+    }));
 }
