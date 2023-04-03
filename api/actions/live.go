@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/timoni-io/go-utils/types"
+	"github.com/fr-str/go-utils/types"
 )
 
 type Live map[string]json.RawMessage

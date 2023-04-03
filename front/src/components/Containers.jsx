@@ -22,22 +22,21 @@ import Fade from '@mui/material/Fade';
 import Backdrop from '@mui/material/Backdrop';
 import Box from '@mui/material/Box';
 import {JSONTree} from 'react-json-tree'
-import { lineHeight } from '@mui/system';
+
 
 
 const Containers = (props) => {
-  // update Components state when props change
   const containers = useSelector(state => state.containers.value)
   // eslint-disable-next-line
   const _ = useSelector(state => state.includeContainers.value)
   let totalMem = 0
   let totalCPU = 0
 
-  // calculate total CPU and MEM
-  Array.from(containers).map((cont) => {
+  Array.from(containers).forEach((cont) => {
     totalMem += cont[1].Stats.Memory.Usage
     totalCPU += cont[1].Stats.CPUUsage
   })
+ 
 
   return (
     <TableContainer component={StyledPaper}>

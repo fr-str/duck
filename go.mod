@@ -5,11 +5,10 @@ go 1.19
 require (
 	github.com/docker/docker v20.10.19+incompatible
 	github.com/evanphx/json-patch v0.5.2
+	github.com/fr-str/go-utils v0.0.0-20230222222313-8cc94dc06411
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
-	github.com/moby/moby v20.10.21+incompatible
-	github.com/timoni-io/go-utils v0.0.0-20221110182434-d8e5bbc6c392
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 )
 
 require (
@@ -25,7 +24,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/urjitbhatia/cozgo v0.0.0-20211110171804-cd9e1ecd80ee // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
@@ -37,5 +35,3 @@ require (
 	golang.org/x/tools v0.1.12 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
 )
-
-replace github.com/timoni-io/go-utils => ../go-utils

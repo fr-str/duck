@@ -12,10 +12,6 @@ import (
 )
 
 func main() {
-	if config.Port == "" {
-		config.Port = ":6666"
-	}
-
 	dcli.Init()
 
 	log.Info("Getting container list...")

@@ -7,8 +7,7 @@ import store from '../app/store'
 export var WS = null;
 
 export function Connect() {
-
-    WS = new WebSocket("localhost:6666");
+    WS = new WebSocket("ws://localhost:8080/api");
     WS.onopen = () => {
         console.log("Connected to websocket");
         Live();

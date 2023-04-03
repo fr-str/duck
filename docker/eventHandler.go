@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	ty "github.com/timoni-io/go-utils/types"
+	ty "github.com/fr-str/go-utils/types"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"

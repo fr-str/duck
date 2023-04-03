@@ -6,11 +6,9 @@ import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 
 const Logs = (props) => {
-    // update Components state when props change
     const logs = useSelector(state => state.logs.value)
 
     let longest = 0;
-    // find the longest container name, if log a or b is undefined skip it
     if (logs.length > 0) {
         longest = logs.reduce(function (a, b) {
             return a && a.Container && a.Container.length > b.Container.length ? a : b;

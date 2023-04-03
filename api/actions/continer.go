@@ -12,7 +12,7 @@ import (
 	"docker-project/wsc"
 	"strings"
 
-	"github.com/timoni-io/go-utils/cmd"
+	"github.com/fr-str/go-utils/cmd"
 )
 
 type Containers struct {

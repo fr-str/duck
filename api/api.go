@@ -21,7 +21,7 @@ func Start(port string) error {
 
 	time.Sleep(500 * time.Millisecond)
 
-	// r.PathPrefix("/").Handler(http.FileServer(http.Dir("./front/build")))
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./front/build")))
 	log.Info("Listening on", port)
 
 	return http.ListenAndServe(port, r)

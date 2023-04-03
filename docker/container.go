@@ -15,8 +15,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/timoni-io/go-utils"
-	"github.com/timoni-io/go-utils/maps"
+	"github.com/fr-str/go-utils"
+	"github.com/fr-str/go-utils/maps"
 )
 
 var (

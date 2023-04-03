@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fr-str/go-utils"
+	"github.com/fr-str/go-utils/math"
 	"github.com/gorilla/websocket"
-	"github.com/timoni-io/go-utils"
-	"github.com/timoni-io/go-utils/math"
 )
 
 var upgrader = websocket.Upgrader{
