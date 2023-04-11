@@ -183,23 +183,24 @@ func GetStats(c *structs.MiniStats, id, name string, ctx context.Context) {
 	}()
 	sc := bufio.NewScanner(st.Body)
 	var lastCPU uint64 = 0
+	const MiB = 2 << 20
 	for sc.Scan() {
 		s := structs.Stats{}
 		json.Unmarshal(sc.Bytes(), &s)
 
 		c.CPUUsage = roundFloat(float64(s.CPUStats.CPUUsage.TotalUsage-lastCPU)/10000000, 2)
 		c.Memory = structs.MiniMem{
-			Usage: roundFloat(float64(s.MemoryStats.Usage)/(1024*1024), 2),
-			Limit: roundFloat(float64(s.MemoryStats.Limit)/float64(1024*1024), 2),
+			Usage: roundFloat(float64(s.MemoryStats.Usage)/MiB, 2),
+			Limit: roundFloat(float64(s.MemoryStats.Limit)/float64(MiB), 2),
 		}
 		c.Network = structs.MiniNet{
-			I: roundFloat(float64(s.Networks.Eth0.RxBytes)/(1024*1024), 2),
-			O: roundFloat(float64(s.Networks.Eth0.TxBytes)/(1024*1024), 2),
+			I: roundFloat(float64(s.Networks.Eth0.RxBytes)/MiB, 2),
+			O: roundFloat(float64(s.Networks.Eth0.TxBytes)/MiB, 2),
 		}
 		if len(s.BlkioStats.IoServiceBytesRecursive) > 0 {
 			c.BlockIO = structs.MiniBlk{
-				I: roundFloat(float64(s.BlkioStats.IoServiceBytesRecursive[0].Value)/(1024*1024), 2),
-				O: roundFloat(float64(s.BlkioStats.IoServiceBytesRecursive[1].Value)/(1024*1024), 2),
+				I: roundFloat(float64(s.BlkioStats.IoServiceBytesRecursive[0].Value)/MiB, 2),
+				O: roundFloat(float64(s.BlkioStats.IoServiceBytesRecursive[1].Value)/MiB, 2),
 			}
 		}
 		lastCPU = s.CPUStats.CPUUsage.TotalUsage

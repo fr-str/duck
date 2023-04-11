@@ -76,16 +76,16 @@ func handleContainer(cli *client.Client, ev events.Message) {
 		if !ok {
 			return
 		}
-		cont, ok := Containers.GetFull(oldName)
+		c, ok := Containers.GetFull(oldName)
 		if !ok {
 			return
 		}
 
 		Containers.Delete(oldName)
 		DockerContainerMap.Delete(oldName)
-		Containers.Set(name, cont)
+		Containers.Set(name, c)
 		go func() {
-			t, err := dcli.Cli.ContainerInspect(context.TODO(), cont.ID)
+			t, err := dcli.Cli.ContainerInspect(context.TODO(), c.ID)
 			if err != nil {
 				if strings.Contains(err.Error(), "No such container") {
 					return
@@ -108,6 +108,15 @@ func handleContainer(cli *client.Client, ev events.Message) {
 	switch ev.Action {
 	case "die":
 		contEvent.ExitCode = ev.Actor.Attributes["exitCode"]
+
+		// TODO: fix this
+		// when someone kills a container we pull container info to fast
+		// and we get wrong container status which can cause infinite pulling of container logs
+		// hacky solution is to wait 1 second and pull container info
+		go func() {
+			time.Sleep(1 * time.Second)
+			updateChan <- struct{}{}
+		}()
 	default:
 	}
 
